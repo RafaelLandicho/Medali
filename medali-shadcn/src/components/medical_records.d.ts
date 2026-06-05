@@ -1,0 +1,88 @@
+import { type ColumnDef } from "@tanstack/react-table";
+export type MedicalHistory = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    gender: string;
+    age: number;
+    birthdate: string;
+    patientDiagnosis: {
+        diagnosis: string;
+        severity: string;
+        notes: string;
+    }[];
+    address: string;
+    address1: string;
+    address2: string;
+    city: string;
+    province: string;
+    telephone: string;
+    addedBy: string;
+    familyHistory: {
+        relation: string;
+        age: string;
+        healthProblems: string;
+        goodHealth: boolean;
+        isAlive: boolean;
+    }[];
+    symptoms?: string;
+    bloodPressure?: string;
+    heartRate?: string;
+    respiratoryRate?: string;
+    temperature?: string;
+    oxygenSaturation?: string;
+    weight?: string;
+    height?: string;
+    medicalCare: boolean;
+    drugAllergy: boolean;
+    foodAllergy: boolean;
+    isTBPositive: boolean;
+    hasClinician: boolean;
+    diet: boolean;
+};
+export type Patient = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    gender: string;
+    age: number;
+    birthdate: string;
+    patientDiagnosis: {
+        diagnosis: string;
+        severity: string;
+        notes: string;
+    }[];
+    address: string;
+    address1: string;
+    address2: string;
+    city: string;
+    province: string;
+    telephone: string;
+    addedBy: string;
+    symptoms?: string;
+    bloodPressure?: string;
+    heartRate?: string;
+    respiratoryRate?: string;
+    temperature?: string;
+    oxygenSaturation?: string;
+    weight?: string;
+    height?: string;
+    familyHistory: {
+        relation: string;
+        age: string;
+        healthProblems: string;
+        goodHealth: boolean;
+        isAlive: boolean;
+    }[];
+    medicalCare: boolean;
+    drugAllergy: boolean;
+    foodAllergy: boolean;
+    isTBPositive: boolean;
+    hasClinician: boolean;
+    diet: boolean;
+    medicalHistory?: {
+        [key: string]: MedicalHistory;
+    };
+};
+export declare const columns: ColumnDef<Patient>[];
+export declare function MedicalRecords(): import("react/jsx-runtime").JSX.Element;
