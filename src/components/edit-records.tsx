@@ -23,6 +23,7 @@ import type { Patient } from "./medical_records";
 import { ref, update, push, set } from "firebase/database";
 import { db } from "@/firebaseConfig";
 import { useAuth } from "@/auth/authprovider";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 type EditRecordsSheetProps = {
@@ -37,6 +38,7 @@ export function EditRecordsSheet({
   patient,
 }: EditRecordsSheetProps) {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [fields, setFields] = useState(patient);
 
   useEffect(() => {

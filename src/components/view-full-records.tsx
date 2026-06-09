@@ -12,15 +12,17 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Download, Eye } from "lucide-react";
 
 type FullDetails = {
   open: boolean;
@@ -30,6 +32,7 @@ type FullDetails = {
 
 export function ViewFullPatient({ patient }: FullDetails) {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [fields, setFields] = useState(patient);
   const printRef = useRef<HTMLDivElement>(null);
   const [previousRecord, setPreviousRecord] = useState<number | null>(null);
@@ -73,44 +76,98 @@ export function ViewFullPatient({ patient }: FullDetails) {
     updateLog();
   };
 
-  return (
-    <div className="flex flex-col gap-6">
-      {/* RECORD SELECTOR */}
-      <div className="flex flex-wrap justify-center gap-2">
+  // Mobile Record Selector - Dropdown version
+  const MobileRecordSelector = () => (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
         <Button
           onClick={() => setPreviousRecord(null)}
-          className="!bg-orange-500 text-white"
+          className={`flex-1 ${previousRecord === null ? "!bg-orange-500 text-white" : "!bg-gray-200 text-gray-700"}`}
         >
           Current Record
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="!bg-[#7b003b] text-white">Open</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuGroup>
-              {medicalHistory.map((_, index) => (
-                <DropdownMenuItem
-                  key={index}
-                  onClick={() => setPreviousRecord(index)}
-                >
-                  Record {index + 1}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* DOWNLOAD */}
-        <div className="flex justify-center">
-          <Button
-            onClick={handleDownloadImage}
-            className="!bg-orange-500 hover:!bg-orange-600 text-white px-8"
-          >
-            Download Medical Record
-          </Button>
-        </div>
+        <Button
+          onClick={handleDownloadImage}
+          className="flex-1 !bg-orange-500 hover:!bg-orange-600 text-white"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Download
+        </Button>
       </div>
+
+      {medicalHistory.length > 0 && (
+        <Select
+          value={previousRecord?.toString() || ""}
+          onValueChange={(value) => {
+            if (value === "current") {
+              setPreviousRecord(null);
+            } else {
+              setPreviousRecord(parseInt(value));
+            }
+          }}
+        >
+          <SelectTrigger className="w-full !bg-white border-gray-300">
+            <SelectValue placeholder="Select previous record" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="current">Current Record</SelectItem>
+            {medicalHistory.map((_, index) => (
+              <SelectItem key={index} value={index.toString()}>
+                Record {index + 1}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* RECORD SELECTOR */}
+      {isMobile ? (
+        <MobileRecordSelector />
+      ) : (
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
+            onClick={() => setPreviousRecord(null)}
+            className={
+              previousRecord === null
+                ? "!bg-orange-500 text-white"
+                : "!bg-gray-200 text-gray-700"
+            }
+          >
+            Current Record
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="!bg-[#7b003b] text-white">Open</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuGroup>
+                {medicalHistory.map((_, index) => (
+                  <DropdownMenuItem
+                    key={index}
+                    onClick={() => setPreviousRecord(index)}
+                  >
+                    Record {index + 1}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* DOWNLOAD */}
+          <div className="flex justify-center">
+            <Button
+              onClick={handleDownloadImage}
+              className="!bg-orange-500 hover:!bg-orange-600 text-white px-8"
+            >
+              Download Medical Record
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* DOCUMENT */}
       <div className="overflow-auto max-h-[85vh] bg-gray-100 p-4 rounded-xl">

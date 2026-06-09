@@ -2,10 +2,8 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import { Card } from "./ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-
 import { Calendar } from "./ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -38,6 +36,7 @@ import type { Patient } from "./medical_records";
 import { ref, update, get, push } from "firebase/database";
 import { db } from "@/firebaseConfig";
 import { useAuth } from "@/auth/authprovider";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 type EditRecordsSheetProps = {
@@ -46,22 +45,17 @@ type EditRecordsSheetProps = {
   patient: Patient;
 };
 
-//date picker code from shadcn components
 function formatDate(date: Date | undefined) {
-  if (!date) {
-    return "";
-  }
-
+  if (!date) return "";
   return date.toLocaleDateString("en-US", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
 }
+
 function isValidDate(date: Date | undefined) {
-  if (!date) {
-    return false;
-  }
+  if (!date) return false;
   return !isNaN(date.getTime());
 }
 
@@ -71,29 +65,12 @@ export function EditRecordsSheet({
   patient,
 }: EditRecordsSheetProps) {
   const { user } = useAuth();
-
+  const isMobile = useIsMobile();
   const [fields, setFields] = useState(patient);
   const [openD, setOpenDate] = React.useState(false);
-
   const [date, setDate] = React.useState<Date | undefined>(undefined);
   const [month, setMonth] = React.useState<Date | undefined>(date);
   const [value, setValue] = React.useState(formatDate(date));
-
-  console.log("PATIENT", fields);
-  // const [patientDiagnosis, setDiagnosis] = useState([
-  //   { diagnosis: "", severity: "", notes: "" },
-  // ]);
-
-  // //FAMILY HISTORY
-  // const [familyHistory, setFamilyHistory] = useState([
-  //   {
-  //     relation: "",
-  //     age: "",
-  //     healthProblems: "",
-  //     goodHealth: true,
-  //     isAlive: true,
-  //   },
-  // ]);
 
   useEffect(() => {
     if (patient) {
@@ -156,6 +133,7 @@ export function EditRecordsSheet({
       return { ...prev, patientDiagnosis: updated };
     });
   };
+
   const handleHistoryChange = (
     index: number,
     key: "relation" | "age" | "healthProblems" | "goodHealth" | "isAlive",
@@ -186,7 +164,6 @@ export function EditRecordsSheet({
 
     const { medicalHistory, ...oldHistory } = currentPatient || {};
 
-    console.log("BEFORE UPDATIUNG", fields.patientDiagnosis);
     await update(patientRef, {
       ...fields,
       address:
@@ -203,58 +180,267 @@ export function EditRecordsSheet({
     onOpenChange(false);
   };
 
+  // Mobile-optimized Diagnosis component
+  const DiagnosisSection = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg md:text-xl font-semibold">Diagnosis</h2>
+        <Button
+          size={isMobile ? "default" : "sm"}
+          className="!bg-[#00a896] text-white"
+          onClick={handleAddDiagnosis}
+        >
+          + Add
+        </Button>
+      </div>
+
+      {fields.patientDiagnosis.map((d, index) => (
+        <div
+          key={index}
+          className={`p-4 border rounded-xl bg-gray-50 ${
+            isMobile ? "space-y-3" : "grid grid-cols-4 gap-3"
+          }`}
+        >
+          <div className={isMobile ? "space-y-1" : ""}>
+            <label className="text-sm font-medium text-gray-700 block md:hidden">
+              Diagnosis
+            </label>
+            <Input
+              value={d.diagnosis}
+              onChange={(e) =>
+                handleDiagnosisChange(index, "diagnosis", e.target.value)
+              }
+              placeholder="Diagnosis"
+              className="w-full"
+            />
+          </div>
+
+          <div className={isMobile ? "space-y-1" : ""}>
+            <label className="text-sm font-medium text-gray-700 block md:hidden">
+              Severity
+            </label>
+            <Input
+              value={d.severity}
+              onChange={(e) =>
+                handleDiagnosisChange(index, "severity", e.target.value)
+              }
+              placeholder="Severity"
+              className="w-full"
+            />
+          </div>
+
+          <div className={isMobile ? "space-y-1" : ""}>
+            <label className="text-sm font-medium text-gray-700 block md:hidden">
+              Notes
+            </label>
+            <Input
+              value={d.notes}
+              onChange={(e) =>
+                handleDiagnosisChange(index, "notes", e.target.value)
+              }
+              placeholder="Notes"
+              className="w-full"
+            />
+          </div>
+
+          {fields.patientDiagnosis.length > 1 && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => handleRemoveDiagnosis(index)}
+              className="w-full md:w-auto"
+            >
+              Remove
+            </Button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
+  // Mobile-optimized Family History component
+  const FamilyHistorySection = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg md:text-xl font-semibold">Family History</h2>
+        <Button
+          size={isMobile ? "default" : "sm"}
+          className="!bg-[#00a896] text-white"
+          onClick={handleAddHistory}
+        >
+          + Add
+        </Button>
+      </div>
+
+      <div className="divide-y border rounded-xl">
+        {fields.familyHistory.map((h, index) => (
+          <div key={index} className="p-4 space-y-3">
+            {/* Relation */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">
+                Relation
+              </label>
+              <Input
+                value={h.relation}
+                onChange={(e) =>
+                  handleHistoryChange(index, "relation", e.target.value)
+                }
+                placeholder="e.g., Mother, Father"
+              />
+            </div>
+
+            {/* Age */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Age</label>
+              <Input
+                value={h.age}
+                onChange={(e) =>
+                  handleHistoryChange(index, "age", e.target.value)
+                }
+                placeholder="Age"
+                type="number"
+              />
+            </div>
+
+            {/* Health Problems */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">
+                Health Problems
+              </label>
+              <Input
+                value={h.healthProblems}
+                onChange={(e) =>
+                  handleHistoryChange(index, "healthProblems", e.target.value)
+                }
+                placeholder="Any health conditions"
+              />
+            </div>
+
+            {/* Checkboxes */}
+            <div className="flex flex-col gap-3 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Good Health
+                </label>
+                <Checkbox
+                  className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
+                  checked={h.goodHealth}
+                  onCheckedChange={(c) =>
+                    handleHistoryChange(index, "goodHealth", c === true)
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Alive
+                </label>
+                <Checkbox
+                  className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
+                  checked={h.isAlive}
+                  onCheckedChange={(c) =>
+                    handleHistoryChange(index, "isAlive", c === true)
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Remove Button */}
+            {fields.familyHistory.length > 1 && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => handleRemoveHistory(index)}
+                className="w-full mt-2"
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        className="overflow-y-auto !w-[75vw] !max-w-none p-0 bg-white
-        [&>button]:text-white 
-        [&>button]:size-7 
-        [&>button]:!bg-red-500  
-        [&>button_svg]:w-6 
-        [&>button_svg]:h-6"
+        side={isMobile ? "bottom" : "right"}
+        className={
+          isMobile
+            ? `
+            overflow-y-auto
+            h-[90vh]
+            w-full
+            p-0
+            bg-white
+            rounded-t-2xl
+            [&>button]:text-white
+            [&>button]:size-6
+            [&>button]:!bg-red-500
+            [&>button]:top-4
+            [&>button]:right-4
+          `
+            : `
+            overflow-y-auto
+            !w-[75vw]
+            !max-w-none
+            p-0
+            bg-white
+            [&>button]:text-white
+            [&>button]:size-7
+            [&>button]:!bg-red-500
+            [&>button_svg]:w-6
+            [&>button_svg]:h-6
+          `
+        }
       >
-        <SheetHeader>
-          <SheetTitle className="text-2xl md:text-3xl font-semibold text-center text-orange-500 mt-8 mb-6">
+        <SheetHeader className="sticky top-0 bg-white z-10 border-b">
+          <SheetTitle className="text-xl md:text-3xl font-semibold text-center text-orange-500 py-4">
             Edit Medical Report
           </SheetTitle>
-
-          <SheetDescription className="text-center text-gray-500 mb-6">
+          <SheetDescription className="text-center text-gray-500 pb-4">
             Update patient information, vitals, and medical history.
           </SheetDescription>
         </SheetHeader>
 
         <Card className="flex-1 border-none rounded-none">
-          <div className="px-4 md:px-8 lg:px-12">
-            <Card className="p-6 md:p-8 rounded-2xl rounded-none border-none">
-              <div className="max-w-5xl mx-auto space-y-8">
+          <div className="px-4 md:px-8 lg:px-12 py-4">
+            <Card className="p-4 md:p-8 rounded-2xl border-none">
+              <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
+                {/* Patient Information */}
                 <div className="space-y-4">
                   <h2 className="text-lg md:text-xl font-semibold">
                     Patient Information
                   </h2>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Field>
-                      <Input
-                        value={fields.firstName}
-                        onChange={(e) =>
-                          handleChange("firstName", e.target.value)
-                        }
-                        placeholder="Enter first name"
-                      />
-                      <FieldDescription>First Name</FieldDescription>
-                    </Field>
+                  <div className="grid grid-cols-1 gap-4">
+                    {/* Name fields - stack on mobile, grid on desktop */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field>
+                        <Input
+                          value={fields.firstName}
+                          onChange={(e) =>
+                            handleChange("firstName", e.target.value)
+                          }
+                          placeholder="Enter first name"
+                        />
+                        <FieldDescription>First Name</FieldDescription>
+                      </Field>
 
-                    <Field>
-                      <Input
-                        value={fields.lastName}
-                        onChange={(e) =>
-                          handleChange("lastName", e.target.value)
-                        }
-                        placeholder="Enter last name"
-                      />
-                      <FieldDescription>Last Name</FieldDescription>
-                    </Field>
+                      <Field>
+                        <Input
+                          value={fields.lastName}
+                          onChange={(e) =>
+                            handleChange("lastName", e.target.value)
+                          }
+                          placeholder="Enter last name"
+                        />
+                        <FieldDescription>Last Name</FieldDescription>
+                      </Field>
+                    </div>
 
+                    {/* Date of Birth */}
                     <Field>
                       <InputGroup>
                         <InputGroupInput
@@ -302,7 +488,6 @@ export function EditRecordsSheet({
                                 selected={date}
                                 month={month}
                                 onMonthChange={setMonth}
-                                className="text-white "
                                 onSelect={(date) => {
                                   setDate(date);
                                   setValue(formatDate(date));
@@ -313,17 +498,21 @@ export function EditRecordsSheet({
                           </Popover>
                         </InputGroupAddon>
                       </InputGroup>
-                      <FieldDescription> Date of Birth</FieldDescription>
+                      <FieldDescription>Date of Birth</FieldDescription>
                     </Field>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+                    {/* Age and Gender - side by side on mobile */}
+                    <div className="grid grid-cols-2 gap-4">
                       <Field>
                         <Input
                           value={fields.age}
                           onChange={(e) => handleChange("age", e.target.value)}
                           placeholder="Enter age"
+                          type="number"
                         />
                         <FieldDescription>Age</FieldDescription>
                       </Field>
+
                       <Field>
                         <Select
                           value={fields.gender}
@@ -331,22 +520,12 @@ export function EditRecordsSheet({
                             handleChange("gender", value)
                           }
                         >
-                          <SelectTrigger className="!bg-[#00a896] w-full border-gray-300 !text-white ">
+                          <SelectTrigger className="!bg-[#00a896] w-full border-gray-300 !text-white">
                             <SelectValue placeholder="Select Gender" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem
-                              className="!bg-white !text-blue-500"
-                              value="MALE"
-                            >
-                              Male
-                            </SelectItem>
-                            <SelectItem
-                              className="!bg-white !text-red-500"
-                              value="FEMALE"
-                            >
-                              Female
-                            </SelectItem>
+                            <SelectItem value="MALE">Male</SelectItem>
+                            <SelectItem value="FEMALE">Female</SelectItem>
                           </SelectContent>
                         </Select>
                         <FieldDescription>Gender</FieldDescription>
@@ -355,12 +534,11 @@ export function EditRecordsSheet({
                   </div>
                 </div>
 
-                {/* ================= CONTACT ================= */}
+                {/* Contact Number */}
                 <div className="space-y-4">
                   <h2 className="text-lg md:text-xl font-semibold">
                     Contact Number
                   </h2>
-
                   <Field>
                     <Input
                       value={fields.telephone}
@@ -368,11 +546,12 @@ export function EditRecordsSheet({
                         handleChange("telephone", e.target.value)
                       }
                       placeholder="Enter contact number"
+                      type="tel"
                     />
                   </Field>
                 </div>
 
-                {/* ================= ADDRESS ================= */}
+                {/* Address */}
                 <div className="space-y-4">
                   <h2 className="text-lg md:text-xl font-semibold">Address</h2>
 
@@ -393,12 +572,13 @@ export function EditRecordsSheet({
                     />
                     <FieldDescription>Address Line 2</FieldDescription>
                   </Field>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 w-screen">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field>
                       <Input
                         value={fields.city}
                         onChange={(e) => handleChange("city", e.target.value)}
-                        placeholder="Enter address"
+                        placeholder="Enter city"
                       />
                       <FieldDescription>City</FieldDescription>
                     </Field>
@@ -409,20 +589,20 @@ export function EditRecordsSheet({
                         onChange={(e) =>
                           handleChange("province", e.target.value)
                         }
-                        placeholder="Enter address"
+                        placeholder="Enter state/province"
                       />
                       <FieldDescription>State/Province</FieldDescription>
                     </Field>
                   </div>
                 </div>
 
-                {/* ================= VITALS ================= */}
+                {/* Vital Statistics - 2 columns on mobile, 3 on desktop */}
                 <div className="space-y-4">
                   <h2 className="text-lg md:text-xl font-semibold">
                     Vital Statistics
                   </h2>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <Field>
                       <Input
                         value={fields.bloodPressure}
@@ -433,6 +613,7 @@ export function EditRecordsSheet({
                       />
                       <FieldDescription>Blood Pressure</FieldDescription>
                     </Field>
+
                     <Field>
                       <Input
                         value={fields.heartRate}
@@ -441,8 +622,9 @@ export function EditRecordsSheet({
                         }
                         placeholder="Heart Rate"
                       />
-                      <FieldDescription>HeartRate</FieldDescription>
+                      <FieldDescription>Heart Rate</FieldDescription>
                     </Field>
+
                     <Field>
                       <Input
                         value={fields.temperature}
@@ -453,6 +635,7 @@ export function EditRecordsSheet({
                       />
                       <FieldDescription>Temperature</FieldDescription>
                     </Field>
+
                     <Field>
                       <Input
                         value={fields.oxygenSaturation}
@@ -463,6 +646,7 @@ export function EditRecordsSheet({
                       />
                       <FieldDescription>Oxygen Saturation</FieldDescription>
                     </Field>
+
                     <Field>
                       <Input
                         value={fields.respiratoryRate}
@@ -482,6 +666,7 @@ export function EditRecordsSheet({
                       />
                       <FieldDescription>Height</FieldDescription>
                     </Field>
+
                     <Field>
                       <Input
                         value={fields.weight}
@@ -492,283 +677,90 @@ export function EditRecordsSheet({
                     </Field>
                   </div>
                 </div>
-                {/* ================= HEALTH HISTORY ================= */}
+
+                {/* Health History - improved touch targets */}
                 <div className="space-y-4">
                   <h2 className="text-lg md:text-xl font-semibold">
                     Health History
                   </h2>
 
                   <div className="divide-y rounded-xl border overflow-hidden">
-                    {/* Medical Care */}
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <FieldLabel>
-                        Are you presently under medical care?
-                      </FieldLabel>
-                      <Checkbox
-                        className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                        checked={fields.medicalCare}
-                        onCheckedChange={(checked) =>
-                          handleChange("medicalCare", checked)
-                        }
-                      />
-                    </div>
-
-                    {/* Drug Allergy */}
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <FieldLabel>Do you have any drug allergies?</FieldLabel>
-                      <Checkbox
-                        checked={fields.drugAllergy}
-                        className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                        onCheckedChange={(checked) =>
-                          handleChange("drugAllergy", checked)
-                        }
-                      />
-                    </div>
-
-                    {/* Food Allergy */}
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <FieldLabel>
-                        Do you have any food or environmental allergies?
-                      </FieldLabel>
-                      <Checkbox
-                        className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                        checked={fields.foodAllergy}
-                        onCheckedChange={(checked) =>
-                          handleChange("foodAllergy", checked)
-                        }
-                      />
-                    </div>
-
-                    {/* TB */}
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <FieldLabel>
-                        Have you ever had tuberculosis or a positive TB test?
-                      </FieldLabel>
-                      <Checkbox
-                        className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                        checked={fields.isTBPositive}
-                        onCheckedChange={(checked) =>
-                          handleChange("isTBPositive", checked)
-                        }
-                      />
-                    </div>
-
-                    {/* Clinician */}
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <FieldLabel>
-                        Have you ever been cared for by a mental health
-                        clinician?
-                      </FieldLabel>
-                      <Checkbox
-                        className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                        checked={fields.hasClinician}
-                        onCheckedChange={(checked) =>
-                          handleChange("hasClinician", checked)
-                        }
-                      />
-                    </div>
-
-                    {/* Diet */}
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <FieldLabel>
-                        Have you ever restricted your eating?
-                      </FieldLabel>
-                      <Checkbox
-                        className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                        checked={fields.diet}
-                        onCheckedChange={(checked) =>
-                          handleChange("diet", checked)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* ================= SYMPTOMS ================= */}
-                <div className="space-y-3">
-                  <h2 className="text-lg md:text-xl font-semibold">Symptoms</h2>
-
-                  <Input
-                    value={fields.symptoms}
-                    onChange={(e) => handleChange("symptoms", e.target.value)}
-                    placeholder="e.g. fever, cough"
-                  />
-                </div>
-
-                {/* ================= DIAGNOSIS ================= */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-lg md:text-xl font-semibold">
-                      Diagnosis
-                    </h2>
-
-                    <Button
-                      size="sm"
-                      className="!bg-[#00a896] text-white"
-                      onClick={handleAddDiagnosis}
-                    >
-                      + Add
-                    </Button>
-                  </div>
-
-                  {fields.patientDiagnosis.map((d, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 border rounded-xl bg-gray-50"
-                    >
-                      <Input
-                        value={d.diagnosis}
-                        onChange={(e) =>
-                          handleDiagnosisChange(
-                            index,
-                            "diagnosis",
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Diagnosis"
-                      />
-
-                      <Input
-                        value={d.severity}
-                        onChange={(e) =>
-                          handleDiagnosisChange(
-                            index,
-                            "severity",
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Severity"
-                      />
-
-                      <Input
-                        value={d.notes}
-                        onChange={(e) =>
-                          handleDiagnosisChange(index, "notes", e.target.value)
-                        }
-                        placeholder="Notes"
-                      />
-
-                      {fields.patientDiagnosis.length > 1 && (
-                        <Button
-                          size="sm"
-                          className="!bg-red-400 text-white"
-                          onClick={() => handleRemoveDiagnosis(index)}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* ================= FAMILY HISTORY ================= */}
-                <div className="space-y-4">
-                  <h2 className="text-lg md:text-xl font-semibold">
-                    Family History
-                  </h2>
-
-                  {/* HEADER */}
-                  <div className="grid grid-cols-[120px_80px_1fr_120px_80px_100px] text-gray-500 text-sm">
-                    <span>Relation</span>
-                    <span>Age</span>
-                    <span>Health Problems</span>
-                    <span className="text-center">Good Health</span>
-                    <span className="text-center">Alive</span>
-                    <div className="flex justify-end">
-                      <Button
-                        size="sm"
-                        className="!bg-[#00a896] text-white"
-                        onClick={handleAddHistory}
-                      >
-                        + Add
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* ROWS */}
-                  <div className="divide-y border rounded-xl">
-                    {fields.familyHistory.map((h, index) => (
+                    {[
+                      {
+                        label: "Are you presently under medical care?",
+                        checked: fields.medicalCare,
+                        key: "medicalCare",
+                      },
+                      {
+                        label: "Do you have any drug allergies?",
+                        checked: fields.drugAllergy,
+                        key: "drugAllergy",
+                      },
+                      {
+                        label:
+                          "Do you have any food or environmental allergies?",
+                        checked: fields.foodAllergy,
+                        key: "foodAllergy",
+                      },
+                      {
+                        label:
+                          "Have you ever had tuberculosis or a positive TB test?",
+                        checked: fields.isTBPositive,
+                        key: "isTBPositive",
+                      },
+                      {
+                        label:
+                          "Have you ever been cared for by a mental health clinician?",
+                        checked: fields.hasClinician,
+                        key: "hasClinician",
+                      },
+                      {
+                        label: "Have you ever restricted your eating?",
+                        checked: fields.diet,
+                        key: "diet",
+                      },
+                    ].map((item) => (
                       <div
-                        key={index}
-                        className="grid grid-cols-[120px_80px_1fr_120px_80px_100px] items-center gap-3 p-3"
+                        key={item.key}
+                        className="flex items-center justify-between px-4 py-4 min-h-[56px]"
                       >
-                        <Input
-                          value={h.relation}
-                          onChange={(e) =>
-                            handleHistoryChange(
-                              index,
-                              "relation",
-                              e.target.value,
-                            )
+                        <label className="text-sm font-medium text-gray-700 flex-1 mr-4">
+                          {item.label}
+                        </label>
+                        <Checkbox
+                          className="size-6 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
+                          checked={item.checked as boolean}
+                          onCheckedChange={(checked) =>
+                            handleChange(item.key as keyof Patient, checked)
                           }
-                          placeholder="Relation"
                         />
-
-                        <Input
-                          value={h.age}
-                          onChange={(e) =>
-                            handleHistoryChange(index, "age", e.target.value)
-                          }
-                          placeholder="Age"
-                        />
-
-                        <Input
-                          value={h.healthProblems}
-                          onChange={(e) =>
-                            handleHistoryChange(
-                              index,
-                              "healthProblems",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Problems"
-                        />
-
-                        <div className="flex justify-center">
-                          <Checkbox
-                            className="size-6 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                            checked={h.goodHealth}
-                            onCheckedChange={(c) =>
-                              handleHistoryChange(
-                                index,
-                                "goodHealth",
-                                c === true,
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="flex justify-center">
-                          <Checkbox
-                            className="size-6 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                            checked={h.isAlive}
-                            onCheckedChange={(c) =>
-                              handleHistoryChange(index, "isAlive", c === true)
-                            }
-                          />
-                        </div>
-
-                        <div className="flex justify-center">
-                          {fields.familyHistory.length > 1 && (
-                            <Button
-                              size="sm"
-                              className="!bg-red-400 text-white"
-                              onClick={() => handleRemoveHistory(index)}
-                            >
-                              Remove
-                            </Button>
-                          )}
-                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* ================= SAVE ================= */}
-                <div className="flex justify-center pt-6">
+                {/* Symptoms */}
+                <div className="space-y-3">
+                  <h2 className="text-lg md:text-xl font-semibold">Symptoms</h2>
+                  <Input
+                    value={fields.symptoms}
+                    onChange={(e) => handleChange("symptoms", e.target.value)}
+                    placeholder="e.g., fever, cough"
+                  />
+                </div>
+
+                {/* Diagnosis Section */}
+                <DiagnosisSection />
+
+                {/* Family History Section */}
+                <FamilyHistorySection />
+
+                {/* Save Button */}
+                <div className="flex justify-center pt-6 sticky bottom-0 bg-white pb-4">
                   <Button
                     onClick={updateRecords}
-                    className="!bg-orange-400 text-white"
+                    className="!bg-orange-400 text-white w-full md:w-auto px-8 py-6 md:py-2 text-base md:text-sm"
+                    size={isMobile ? "lg" : "default"}
                   >
                     Update Record
                   </Button>
