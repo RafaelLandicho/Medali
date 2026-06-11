@@ -17,7 +17,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import type { SortingState, ColumnFiltersState } from "@tanstack/react-table";
 import {
   Dialog,
@@ -145,34 +145,32 @@ const RejectRecord = ({ patient }: { patient: Patient }) => {
         variant="outline"
         size="icon"
         onClick={() => setOpenRejectDialog(true)}
-        className="!bg-white rounded hover:bg-gray-200"
+        className="bg-white rounded hover:bg-red-50 border-red-200"
       >
-        <CircleXIcon className="text-orange-600" />
+        <CircleXIcon className="text-red-600 h-4 w-4" />
       </Button>
 
       <Dialog open={openRejectDialog} onOpenChange={setOpenRejectDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              Would you like to reject this patient record?
-            </DialogTitle>
+            <DialogTitle>Reject Patient Record</DialogTitle>
             <DialogDescription>
-              THis action will reject and delete pending record of{" "}
+              This action will reject and delete the pending record of{" "}
               <span className="font-semibold">
                 {patient.firstName} {patient.lastName}
               </span>{" "}
-              to your database.
+              from the system. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-end gap-2">
             <Button
               onClick={handleReject}
-              className="!bg-green-400 hover:!bg-green-600 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Approve
+              Reject
             </Button>
             <DialogClose asChild>
-              <Button className="!bg-gray-200">Cancel</Button>
+              <Button variant="outline">Cancel</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -220,34 +218,32 @@ const AcceptRecord = ({ patient }: { patient: Patient }) => {
         variant="outline"
         size="icon"
         onClick={() => setOpenAcceptDialog(true)}
-        className="!bg-white rounded hover:bg-gray-200"
+        className="bg-white rounded hover:bg-green-50 border-green-200"
       >
-        <CheckIcon className="text-orange-600" />
+        <CheckIcon className="text-green-600 h-4 w-4" />
       </Button>
 
       <Dialog open={openAcceptDialog} onOpenChange={setOpenAcceptDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              Would you like to approve this patient record?
-            </DialogTitle>
+            <DialogTitle>Approve Patient Record</DialogTitle>
             <DialogDescription>
-              THis action will move the pending record of{" "}
+              This action will move the pending record of{" "}
               <span className="font-semibold">
                 {patient.firstName} {patient.lastName}
               </span>{" "}
-              to your database.
+              to your active patients database.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-end gap-2">
             <Button
               onClick={handleAccept}
-              className="!bg-green-400 hover:!bg-green-600 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               Approve
             </Button>
             <DialogClose asChild>
-              <Button className="!bg-gray-200">Cancel</Button>
+              <Button variant="outline">Cancel</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -264,14 +260,12 @@ export const columns: ColumnDef<Patient>[] = [
   { accessorKey: "address", header: "Address" },
   { accessorKey: "telephone", header: "Contact Number" },
   { accessorKey: "status", header: "Status" },
-
   { accessorKey: "addedBy", header: "Added By" },
   {
     accessorKey: "patientDiagnosis",
     header: "Diagnosis",
     cell: ({ row }) => {
       const diagnosis = row.original.patientDiagnosis;
-      console.log("PATIENT DIAGNOSIS:", diagnosis);
       if (!diagnosis?.length) return "No diagnosis";
 
       return (
@@ -287,10 +281,9 @@ export const columns: ColumnDef<Patient>[] = [
       );
     },
   },
-
   {
     id: "accept",
-    header: "",
+    header: "Actions",
     cell: ({ row }) => <AcceptRecord patient={row.original} />,
     enableSorting: false,
     enableHiding: false,
@@ -309,6 +302,18 @@ export function PendingRecords() {
   const [data, setData] = React.useState<Patient[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter] = React.useState("firstName");
+  const [searchValue, setSearchValue] = React.useState("");
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  // Mobile detection
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   React.useEffect(() => {
     if (!user) return;
@@ -333,7 +338,6 @@ export function PendingRecords() {
 
       const unsubscribePatients = onValue(patientsRef, (snapshot) => {
         const data = snapshot.val();
-        console.log("RAW PATIENT DATA:", data); // Debug log
 
         const patients: Patient[] = data
           ? Object.entries(data)
@@ -350,15 +354,12 @@ export function PendingRecords() {
               })
               .filter((patient) => {
                 if (currentUser.type === "admin") return true;
-
                 const createdBy = patient.createdBy;
                 const sharedWith = patient.sharedWith || [];
-
                 return createdBy === user.uid || sharedWith.includes(user.uid);
               })
           : [];
 
-        console.log("PROCESSED PATIENTS:", patients); // Debug log
         setData(patients);
         setLoading(false);
       });
@@ -371,7 +372,7 @@ export function PendingRecords() {
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
+    [],
   );
   const [columnVisibility, setColumnVisibility] = React.useState<
     Record<string, boolean>
@@ -392,166 +393,218 @@ export function PendingRecords() {
     state: { sorting, columnFilters, columnVisibility, rowSelection },
   });
 
+  // Handle mobile column visibility
   React.useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 640) {
-        table.getAllColumns().forEach((col) => {
-          if (
-            [
-              "bloodPressure",
-              "heartRate",
-              "respiratoryRate",
-              "temperature",
-              "oxygenSaturation",
-            ].includes(col.id)
-          ) {
-            col.toggleVisibility(false);
-          }
-        });
-      } else {
-        table.getAllColumns().forEach((col) => col.toggleVisibility(true));
-      }
-    };
+    if (isMobile) {
+      table.getAllColumns().forEach((col) => {
+        if (
+          [
+            "address",
+            "telephone",
+            "status",
+            "addedBy",
+            "patientDiagnosis",
+          ].includes(col.id)
+        ) {
+          col.toggleVisibility(false);
+        }
+      });
+      // Keep accept and reject columns visible
+      table.getColumn("accept")?.toggleVisibility(true);
+      table.getColumn("reject")?.toggleVisibility(true);
+    } else {
+      table.getAllColumns().forEach((col) => {
+        if (col.id !== "accept" && col.id !== "reject") {
+          col.toggleVisibility(true);
+        }
+      });
+    }
+  }, [isMobile, table]);
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [table]);
+  // Handle search
+  React.useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (searchValue) {
+        table.getColumn(filter)?.setFilterValue(searchValue);
+      } else {
+        table.getColumn(filter)?.setFilterValue("");
+      }
+    }, 300);
+    return () => clearTimeout(delayDebounce);
+  }, [searchValue, filter, table]);
+
+  const clearSearch = () => {
+    setSearchValue("");
+    table.getColumn(filter)?.setFilterValue("");
+  };
 
   if (loading)
     return (
       <div className="flex justify-center items-center p-10">
         <Spinner className="w-8 h-8" />
-        <span className="ml-2">Loading medical records...</span>
+        <span className="ml-2">Loading pending records...</span>
       </div>
     );
 
   return (
-    <div className="flex flex-col p-4 gap-4">
-      <h1 className="text-4xl font-bold text-orange-400 text-center">
-        Pending Medical Records
-      </h1>
+    <div className="flex flex-col p-4 gap-4 bg-gray-50 min-h-screen">
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h1 className="text-3xl font-bold text-teal-600 mb-6">
+          Pending Medical Records
+          <p className="text-sm font-normal text-gray-500 mt-1">
+            Review and manage patient records awaiting approval
+          </p>
+        </h1>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center p-2">
-        <Input
-          placeholder={`🔍 Search by ${filter.toUpperCase()}`}
-          value={(table.getColumn(filter)?.getFilterValue() as string) ?? ""}
-          onChange={(e) =>
-            table.getColumn(filter)?.setFilterValue(e.target.value)
-          }
-          className="w-full sm:w-96 rounded-lg border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="!bg-orange-500 !text-white">
-              Filter <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((col) => col.getCanFilter())
-              .map((col) => (
-                <DropdownMenuItem
-                  key={col.id}
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setFilter(col.id);
-                    col.setFilterValue("");
-                  }}
-                  className={`capitalize ${
-                    filter === col.id ? "!bg-blue-100 !text-blue-700" : ""
-                  }`}
-                >
-                  {col.id
-                    .replace(/([A-Z])/g, " $1")
-                    .replace(/^./, (str) => str.toUpperCase())}
-                </DropdownMenuItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+        {/* Search and Filter */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder={`Search by ${filter.replace(/([A-Z])/g, " $1").toLowerCase()}...`}
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              className="pl-10 pr-10 rounded-lg border-gray-200 focus:ring-2 focus:ring-teal-500"
+            />
+            {searchValue && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2"
+              >
+                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
 
-      {/* Table */}
-      <div className="border border-gray-200 rounded-lg overflow-x-auto bg-white shadow-sm">
-        <Table className="min-w-[1000px] text-sm">
-          <TableHeader className="sticky top-0 bg-[#00a896] z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="text-white">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-gray-200">
+                  <span className="mr-2">🔍</span>
+                  Filter by: {filter.replace(/([A-Z])/g, " $1")}
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter(
+                    (col) =>
+                      col.getCanFilter() &&
+                      col.id !== "accept" &&
+                      col.id !== "reject",
+                  )
+                  .map((col) => (
+                    <DropdownMenuItem
+                      key={col.id}
+                      onSelect={() => {
+                        setFilter(col.id);
+                        setSearchValue("");
+                        col.setFilterValue("");
+                      }}
+                      className={`capitalize ${
+                        filter === col.id ? "bg-teal-50 text-teal-700" : ""
+                      }`}
+                    >
+                      {col.id
+                        .replace(/([A-Z])/g, " $1")
+                        .replace(/^./, (str) => str.toUpperCase())}
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="!bg-white !text-black"
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+        {/* Records Count */}
+        <div className="mb-4 text-sm text-gray-600">
+          Showing {table.getRowModel().rows.length} of {data.length} pending
+          records
+        </div>
+
+        {/* Table */}
+        <div className="border border-gray-200 rounded-lg overflow-x-auto bg-white">
+          <Table className="min-w-[800px] md:min-w-full">
+            <TableHeader className="bg-teal-600">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="text-white font-semibold"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  <EmptyRecords>
-                    <AddRecordsDrawer />
-                  </EmptyRecords>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
 
-      {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between py-2 border-t bg-white gap-2 sm:gap-0">
-        <div className="text-muted-foreground text-sm">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="hover:bg-gray-50 transition-colors"
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="py-3">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    <EmptyRecords>
+                      <AddRecordsDrawer />
+                    </EmptyRecords>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="!bg-orange-500 !text-white"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="!bg-orange-500 !text-white"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+
+        {/* Pagination */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+          <div className="text-sm text-gray-600 order-2 sm:order-1">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </div>
+          <div className="flex gap-2 order-1 sm:order-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="border-gray-200 hover:bg-teal-50"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="border-gray-200 hover:bg-teal-50"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
     </div>

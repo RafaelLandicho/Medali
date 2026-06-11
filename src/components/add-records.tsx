@@ -8,7 +8,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "./ui/calendar";
-import { CalendarIcon, Check } from "lucide-react";
+import {
+  CalendarIcon,
+  Heart,
+  Wind,
+  Thermometer,
+  Droplets,
+  Ruler,
+  Weight,
+  Activity,
+  User,
+  MapPin,
+  Phone,
+  ClipboardList,
+  Users,
+  Stethoscope,
+  ShieldCheck,
+} from "lucide-react";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
@@ -28,12 +44,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { db } from "@/firebaseConfig";
 import { ref, set, push, onValue, get } from "firebase/database";
@@ -41,29 +51,21 @@ import { useAuth } from "@/auth/authprovider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 
-//FUNCTIONS AND INTERFACES FOR COMPONENTS
-
-//date picker code from shadcn components
 function formatDate(date: Date | undefined) {
-  if (!date) {
-    return "";
-  }
-
+  if (!date) return "";
   return date.toLocaleDateString("en-US", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
 }
+
 function isValidDate(date: Date | undefined) {
-  if (!date) {
-    return false;
-  }
+  if (!date) return false;
   return !isNaN(date.getTime());
 }
 
 export function AddRecords() {
-  // TEST SAVE 123
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -91,8 +93,6 @@ export function AddRecords() {
     patientOxygenSaturation: "",
     patientHeight: "",
     patientWeight: "",
-
-    // HEALTH HISTORY
     patientisMedicalCare: false,
     patientDrugAllergy: false,
     patientFoodAllergy: false,
@@ -107,8 +107,6 @@ export function AddRecords() {
   const [patientDiagnosis, setDiagnosis] = useState([
     { diagnosis: "", severity: "", notes: "" },
   ]);
-
-  //FAMILY HISTORY
   const [familyHistory, setFamilyHistory] = useState([
     {
       relation: "",
@@ -118,32 +116,25 @@ export function AddRecords() {
       isAlive: true,
     },
   ]);
-
   const [linkedUsers, setLinkedUsers] = React.useState<any[]>([]);
   const [selectedLinkedUser, setSelectedLinkedUser] = React.useState("");
+
   const userIsAdmin = user?.type?.toLowerCase() === "admin";
   const userIsSecretary = user?.type?.toLowerCase() === "secretary";
   const userIsDoctor = user?.type?.toLowerCase() === "doctor";
 
   React.useEffect(() => {
     if (!user) return;
-
     const userRef = ref(db, `users/${user.uid}`);
     const unsubscribe = onValue(userRef, async (snapshot) => {
       const userData = snapshot.val();
       if (!userData) return;
-
       let linkedUserIds: string[] = [];
-
       if (user.type?.toLowerCase() === "secretary") {
-        // Secretary: get linked doctors
         linkedUserIds = userData.doctors || [];
       } else if (user.type?.toLowerCase() === "doctor") {
-        // Doctor: get linked secretaries
         linkedUserIds = userData.secretaries || [];
       }
-
-      // Fetch details of linked users
       const linkedUsersPromises = linkedUserIds.map(async (userId: string) => {
         const linkedUserRef = ref(db, `users/${userId}`);
         const linkedUserSnap = await get(linkedUserRef);
@@ -152,11 +143,9 @@ export function AddRecords() {
         }
         return null;
       });
-
       const linkedUsersData = await Promise.all(linkedUsersPromises);
       setLinkedUsers(linkedUsersData.filter(Boolean));
     });
-
     return () => unsubscribe();
   }, [user]);
 
@@ -170,6 +159,7 @@ export function AddRecords() {
       ...patientDiagnosis,
       { diagnosis: "", severity: "", notes: "" },
     ]);
+
   const handleAddHistory = () =>
     setFamilyHistory([
       ...familyHistory,
@@ -197,18 +187,18 @@ export function AddRecords() {
     updated[index][key] = value;
     setDiagnosis(updated);
   };
+
   const handleHistoryChange = (
     index: number,
     key: "relation" | "age" | "healthProblems" | "goodHealth" | "isAlive",
     value: string | boolean,
   ) => {
     const updated = [...familyHistory];
-    if (key == "goodHealth" || key == "isAlive") {
+    if (key === "goodHealth" || key === "isAlive") {
       updated[index][key] = value as boolean;
     } else {
       updated[index][key] = value as string;
     }
-
     setFamilyHistory(updated);
   };
 
@@ -234,10 +224,8 @@ export function AddRecords() {
       const newLog = push(logsRef);
 
       const sharedWith = [user?.uid];
+      if (selectedLinkedUser) sharedWith.push(selectedLinkedUser);
 
-      if (selectedLinkedUser) {
-        sharedWith.push(selectedLinkedUser);
-      }
       if (userIsSecretary) {
         await set(pending, {
           patientId: patient.key,
@@ -256,8 +244,6 @@ export function AddRecords() {
           address2: fields.patientAddress2,
           city: fields.patientCity,
           province: fields.patientStateProvince,
-
-          //Measurements and Symptoms
           diagnosis: patientDiagnosis,
           symptoms: fields.patientSymptoms,
           bloodPressure: fields.patientBloodPressure,
@@ -267,33 +253,26 @@ export function AddRecords() {
           oxygenSaturation: fields.patientOxygenSaturation,
           weight: fields.patientWeight,
           height: fields.patientHeight,
-
-          //Health History
           medicalCare: fields.patientisMedicalCare,
           drugAllergy: fields.patientDrugAllergy,
           foodAllergy: fields.patientFoodAllergy,
           isTBPositive: fields.patientTBPositive,
           hasClinician: fields.patientHasClinician,
           diet: fields.patientDiet,
-
-          //family history
           familyHistory: familyHistory,
-
           status: "pending",
           addedBy: user?.email,
           createdBy: user?.uid,
           createdAt: Date.now(),
           sharedWith: sharedWith,
         });
-
         await set(newLog, {
-          medicalRecordLog: `Medical Record added for approval  by ${user?.firstName} ${user?.lastName} `,
+          medicalRecordLog: `Medical Record added for approval by ${user?.firstName} ${user?.lastName}`,
           logTime: new Date().toLocaleString(),
         });
         toast.success("Record has been added for approval!");
       } else {
         await set(patient, {
-          //Patient Info
           patientId: patient.key,
           firstName: fields.patientFirstName,
           lastName: fields.patientLastName,
@@ -306,13 +285,10 @@ export function AddRecords() {
             fields.patientAddress2 +
             fields.patientCity +
             fields.patientStateProvince,
-
           address1: fields.patientAddress,
           address2: fields.patientAddress2,
           city: fields.patientCity,
           province: fields.patientStateProvince,
-
-          //Measurements and Symptoms
           patientDiagnosis: patientDiagnosis,
           symptoms: fields.patientSymptoms,
           bloodPressure: fields.patientBloodPressure,
@@ -322,26 +298,20 @@ export function AddRecords() {
           oxygenSaturation: fields.patientOxygenSaturation,
           weight: fields.patientWeight,
           height: fields.patientHeight,
-
-          //Health History
           medicalCare: fields.patientisMedicalCare,
           drugAllergy: fields.patientDrugAllergy,
           foodAllergy: fields.patientFoodAllergy,
           isTBPositive: fields.patientTBPositive,
           hasClinician: fields.patientHasClinician,
           diet: fields.patientDiet,
-
-          //family history
           familyHistory: familyHistory,
-
           addedBy: user?.email,
           createdBy: user?.uid,
           createdAt: Date.now(),
           sharedWith: sharedWith,
         });
-
         await set(newLog, {
-          medicalRecordLog: `Medical Record added by ${user?.firstName} ${user?.lastName} `,
+          medicalRecordLog: `Medical Record added by ${user?.firstName} ${user?.lastName}`,
           logTime: new Date().toLocaleString(),
         });
         toast.success("Record has been added successfully!");
@@ -367,26 +337,42 @@ export function AddRecords() {
       }}
       className="space-y-6 md:space-y-8"
     >
-      <Card className="flex-1">
-        <h1 className="text-2xl md:text-3xl font-semibold text-center text-orange-500 mb-6 md:mb-8">
-          Medical Report Form
-        </h1>
+      <Card className="flex-1 p-6 md:p-8">
+        {/* ── HEADER ── */}
+        <div className="text-center mb-8">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">
+            Medical Report Form
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Fill in all required fields marked with{" "}
+            <span className="text-red-400">*</span>
+          </p>
+          <div className="mt-4 h-1 w-16 bg-[#00c4b4] rounded-full mx-auto" />
+        </div>
 
-        <div className="px-4 md:px-8 lg:px-12">
-          <Card className="p-6 md:p-8 rounded-2xl">
-            <div className="max-w-5xl mx-auto space-y-8">
+        <div className="px-0 md:px-4 lg:px-8">
+          <Card className="p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="max-w-5xl mx-auto space-y-10">
+              {/* ── PATIENT INFORMATION ── */}
               <div className="space-y-4">
-                <h2 className="text-lg md:text-xl font-semibold">
-                  Patient Information
-                </h2>
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-[#00a896]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                      Patient Information
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Basic demographic details
+                    </p>
+                  </div>
+                </div>
 
-                {/*PATIENT FULL NAME */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/*First Name */}
-
                   <Field>
                     <Input
-                      placeholder="Enter first name"
+                      placeholder="Enter first name *"
                       value={fields.patientFirstName}
                       onChange={(e) =>
                         handleChange("patientFirstName", e.target.value)
@@ -396,11 +382,9 @@ export function AddRecords() {
                     <FieldDescription>First Name</FieldDescription>
                   </Field>
 
-                  {/*Last Name */}
                   <Field>
                     <Input
-                      // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                      placeholder="Enter last name"
+                      placeholder="Enter last name *"
                       value={fields.patientLastName}
                       onChange={(e) =>
                         handleChange("patientLastName", e.target.value)
@@ -409,8 +393,6 @@ export function AddRecords() {
                     />
                     <FieldDescription>Last Name</FieldDescription>
                   </Field>
-
-                  {/* BIRTHDAY FIELD */}
 
                   <Field>
                     <InputGroup>
@@ -459,7 +441,7 @@ export function AddRecords() {
                               selected={date}
                               month={month}
                               onMonthChange={setMonth}
-                              className="text-white "
+                              className="text-white"
                               onSelect={(date) => {
                                 setDate(date);
                                 setValue(formatDate(date));
@@ -470,29 +452,23 @@ export function AddRecords() {
                         </Popover>
                       </InputGroupAddon>
                     </InputGroup>
-                    <FieldDescription> Date of Birth</FieldDescription>
+                    <FieldDescription>Date of Birth</FieldDescription>
                   </Field>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/*AGE*/}
-                  <div>
-                    <Field>
-                      <Input
-                        type="number"
-                        // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                        placeholder="Enter age"
-                        value={fields.patientAge}
-                        onChange={(e) =>
-                          handleChange("patientAge", e.target.value)
-                        }
-                        required
-                      />
-                      <FieldDescription>Patient Age</FieldDescription>
-                    </Field>
-                  </div>
-
-                  {/*GENDER*/}
+                  <Field>
+                    <Input
+                      type="number"
+                      placeholder="Enter age *"
+                      value={fields.patientAge}
+                      onChange={(e) =>
+                        handleChange("patientAge", e.target.value)
+                      }
+                      required
+                    />
+                    <FieldDescription>Patient Age</FieldDescription>
+                  </Field>
 
                   <Select
                     value={fields.patientGender}
@@ -500,8 +476,8 @@ export function AddRecords() {
                       handleChange("patientGender", value)
                     }
                   >
-                    <SelectTrigger className="!bg-[#00a896] w-full border-gray-300 !text-white ">
-                      <SelectValue placeholder="Select Gender" />
+                    <SelectTrigger className="!bg-[#00a896] w-full border-gray-300 !text-white">
+                      <SelectValue placeholder="Select Gender *" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem
@@ -521,15 +497,22 @@ export function AddRecords() {
                 </div>
               </div>
 
+              {/* ── ADDRESS ── */}
               <div className="space-y-4">
-                <h2 className="text-lg md:text-xl font-semibold">Address</h2>
-                {/* ADDRESS DETAILS*/}
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-4 h-4 text-[#00a896]" />
+                  </div>
+                  <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                    Address
+                  </h2>
+                </div>
+
                 <div className="grid grid-cols-1 gap-4">
                   <Field>
                     <Input
                       type="text"
-                      // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                      placeholder="Enter address"
+                      placeholder="Street address, building, unit..."
                       value={fields.patientAddress}
                       onChange={(e) =>
                         handleChange("patientAddress", e.target.value)
@@ -540,8 +523,7 @@ export function AddRecords() {
                   <Field>
                     <Input
                       type="text"
-                      // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                      placeholder="Enter address"
+                      placeholder="Apartment, suite, etc. (optional)"
                       value={fields.patientAddress2}
                       onChange={(e) =>
                         handleChange("patientAddress2", e.target.value)
@@ -553,8 +535,7 @@ export function AddRecords() {
                     <Field>
                       <Input
                         type="text"
-                        // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                        placeholder="Enter City"
+                        placeholder="City"
                         value={fields.patientCity}
                         onChange={(e) =>
                           handleChange("patientCity", e.target.value)
@@ -565,27 +546,32 @@ export function AddRecords() {
                     <Field className="mx-auto w-full">
                       <Input
                         type="text"
-                        // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                        placeholder="Enter State or Province"
+                        placeholder="State or Province"
                         value={fields.patientStateProvince}
                         onChange={(e) =>
                           handleChange("patientStateProvince", e.target.value)
                         }
                       />
-                      <FieldDescription>State/Province</FieldDescription>
+                      <FieldDescription>State / Province</FieldDescription>
                     </Field>
                   </div>
                 </div>
               </div>
+
+              {/* ── CONTACT NUMBER ── */}
               <div className="space-y-4">
-                <h2 className="text-lg md:text-xl font-semibold">
-                  Contact Number
-                </h2>
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-4 h-4 text-[#00a896]" />
+                  </div>
+                  <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                    Contact Number
+                  </h2>
+                </div>
                 <Field>
                   <Input
                     type="text"
-                    // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                    placeholder="Enter contact number"
+                    placeholder="+63 912 345 6789"
                     value={fields.patientTelephone}
                     onChange={(e) =>
                       handleChange("patientTelephone", e.target.value)
@@ -593,209 +579,221 @@ export function AddRecords() {
                   />
                 </Field>
               </div>
-              <div>
-                <h2 className="text-lg md:text-xl font-semibold">
-                  Vital Statistics
-                </h2>
-              </div>
-              <div
-                className={`${
-                  isMobile ? "grid grid-cols-1 gap-4" : "flex flex-row gap-8"
-                }`}
-              >
-                <Field>
-                  <Input
-                    type="text"
-                    // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                    placeholder="120/80"
-                    value={fields.patientBloodPressure}
-                    onChange={(e) =>
-                      handleChange("patientBloodPressure", e.target.value)
-                    }
-                  />
-                  <FieldDescription>Blood Pressure (mmHg)</FieldDescription>
-                </Field>
-                <Field>
-                  <Input
-                    type="text"
-                    // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                    placeholder="72"
-                    value={fields.patientHeartRate}
-                    onChange={(e) =>
-                      handleChange("patientHeartRate", e.target.value)
-                    }
-                  />
-                  <FieldDescription>Heart Rate (BPM)</FieldDescription>
-                </Field>
-                <Field>
-                  <Input
-                    type="text"
-                    // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                    placeholder="16"
-                    value={fields.patientRespiratoryRate}
-                    onChange={(e) =>
-                      handleChange("patientRespiratoryRate", e.target.value)
-                    }
-                  />
-                  <FieldDescription>Respiratory Rate</FieldDescription>
-                </Field>
-                <Field>
-                  <Input
-                    type="text"
-                    // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                    placeholder="98"
-                    value={fields.patientOxygenSaturation}
-                    onChange={(e) =>
-                      handleChange("patientOxygenSaturation", e.target.value)
-                    }
-                  />
-                  <FieldDescription>Oxygen Saturation (%)</FieldDescription>
-                </Field>
-              </div>
-              <div
-                className={`${
-                  isMobile ? "grid grid-cols-1 gap-4" : "flex flex-row gap-8"
-                }`}
-              >
-                <Field className="mx-auto w-full">
-                  <Input
-                    type="text"
-                    // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                    placeholder="170"
-                    value={fields.patientHeight}
-                    onChange={(e) =>
-                      handleChange("patientHeight", e.target.value)
-                    }
-                  />
-                  <FieldDescription>Height (cm)</FieldDescription>
-                </Field>
 
-                <Field className="mx-auto w-full">
-                  <Input
-                    type="text"
-                    // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                    placeholder="62"
-                    value={fields.patientWeight}
-                    onChange={(e) =>
-                      handleChange("patientWeight", e.target.value)
-                    }
-                  />
-                  <FieldDescription>Weight (kg)</FieldDescription>
-                </Field>
-
-                <Field>
-                  <Input
-                    type="text"
-                    // className="h-12 md:h-14 !text-lg md:!text-xl px-4 md:px-5"
-                    placeholder="36.5"
-                    value={fields.patientTemperature}
-                    onChange={(e) =>
-                      handleChange("patientTemperature", e.target.value)
-                    }
-                  />
-                  <FieldDescription>Temperature (°C)</FieldDescription>
-                </Field>
-              </div>
+              {/* ── VITAL STATISTICS ── */}
               <div className="space-y-4">
-                <div>
-                  <h2 className="text-lg md:text-xl font-semibold">
-                    Health History
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Please check if any of the following apply
-                  </p>
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <Activity className="w-4 h-4 text-[#00a896]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                      Vital Statistics
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Leave blank if not measured
+                    </p>
+                  </div>
                 </div>
 
-                {/* CHECKLIST */}
-                <div className="divide-y rounded-xl border overflow-hidden">
-                  {/* Medical Care */}
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <FieldLabel>
-                      Are you presently under medical care?
-                    </FieldLabel>
-                    <Checkbox
-                      className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                      checked={fields.patientisMedicalCare}
-                      onCheckedChange={(checked) =>
-                        handleChange("patientisMedicalCare", checked)
-                      }
-                    />
-                  </div>
+                <div
+                  className={`${isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-4 gap-4"}`}
+                >
+                  <Field>
+                    <div className="relative">
+                      <Activity className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                      <Input
+                        type="text"
+                        placeholder="120/80"
+                        value={fields.patientBloodPressure}
+                        onChange={(e) =>
+                          handleChange("patientBloodPressure", e.target.value)
+                        }
+                        className="pl-9"
+                      />
+                    </div>
+                    <FieldDescription>Blood Pressure (mmHg)</FieldDescription>
+                  </Field>
 
-                  {/* Drug Allergy */}
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <FieldLabel>Do you have any drug allergies?</FieldLabel>
-                    <Checkbox
-                      checked={fields.patientDrugAllergy}
-                      className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                      onCheckedChange={(checked) =>
-                        handleChange("patientDrugAllergy", checked)
-                      }
-                    />
-                  </div>
+                  <Field>
+                    <div className="relative">
+                      <Heart className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                      <Input
+                        type="text"
+                        placeholder="72"
+                        value={fields.patientHeartRate}
+                        onChange={(e) =>
+                          handleChange("patientHeartRate", e.target.value)
+                        }
+                        className="pl-9"
+                      />
+                    </div>
+                    <FieldDescription>Heart Rate (BPM)</FieldDescription>
+                  </Field>
 
-                  {/* Food Allergy */}
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <FieldLabel>
-                      Do you have any food or environmental allergies?
-                    </FieldLabel>
-                    <Checkbox
-                      className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                      checked={fields.patientFoodAllergy}
-                      onCheckedChange={(checked) =>
-                        handleChange("patientFoodAllergy", checked)
-                      }
-                    />
-                  </div>
+                  <Field>
+                    <div className="relative">
+                      <Wind className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                      <Input
+                        type="text"
+                        placeholder="16"
+                        value={fields.patientRespiratoryRate}
+                        onChange={(e) =>
+                          handleChange("patientRespiratoryRate", e.target.value)
+                        }
+                        className="pl-9"
+                      />
+                    </div>
+                    <FieldDescription>Respiratory Rate</FieldDescription>
+                  </Field>
 
-                  {/* TB */}
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <FieldLabel>
-                      Have you ever had tuberculosis or a positive TB test?
-                    </FieldLabel>
-                    <Checkbox
-                      className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                      checked={fields.patientTBPositive}
-                      onCheckedChange={(checked) =>
-                        handleChange("patientTBPositive", checked)
-                      }
-                    />
-                  </div>
+                  <Field>
+                    <div className="relative">
+                      <Droplets className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                      <Input
+                        type="text"
+                        placeholder="98"
+                        value={fields.patientOxygenSaturation}
+                        onChange={(e) =>
+                          handleChange(
+                            "patientOxygenSaturation",
+                            e.target.value,
+                          )
+                        }
+                        className="pl-9"
+                      />
+                    </div>
+                    <FieldDescription>Oxygen Saturation (%)</FieldDescription>
+                  </Field>
+                </div>
 
-                  {/* Clinician */}
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <FieldLabel>
-                      Have you ever been cared for by a mental health clinician?
-                    </FieldLabel>
-                    <Checkbox
-                      className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                      checked={fields.patientHasClinician}
-                      onCheckedChange={(checked) =>
-                        handleChange("patientHasClinician", checked)
-                      }
-                    />
-                  </div>
+                <div
+                  className={`${isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-3 gap-4"}`}
+                >
+                  <Field className="mx-auto w-full">
+                    <div className="relative">
+                      <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                      <Input
+                        type="text"
+                        placeholder="170"
+                        value={fields.patientHeight}
+                        onChange={(e) =>
+                          handleChange("patientHeight", e.target.value)
+                        }
+                        className="pl-9"
+                      />
+                    </div>
+                    <FieldDescription>Height (cm)</FieldDescription>
+                  </Field>
 
-                  {/* Diet */}
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <FieldLabel>
-                      Have you ever restricted your eating?
-                    </FieldLabel>
-                    <Checkbox
-                      className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                      checked={fields.patientDiet}
-                      onCheckedChange={(checked) =>
-                        handleChange("patientDiet", checked)
-                      }
-                    />
-                  </div>
+                  <Field className="mx-auto w-full">
+                    <div className="relative">
+                      <Weight className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                      <Input
+                        type="text"
+                        placeholder="62"
+                        value={fields.patientWeight}
+                        onChange={(e) =>
+                          handleChange("patientWeight", e.target.value)
+                        }
+                        className="pl-9"
+                      />
+                    </div>
+                    <FieldDescription>Weight (kg)</FieldDescription>
+                  </Field>
+
+                  <Field>
+                    <div className="relative">
+                      <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                      <Input
+                        type="text"
+                        placeholder="36.5"
+                        value={fields.patientTemperature}
+                        onChange={(e) =>
+                          handleChange("patientTemperature", e.target.value)
+                        }
+                        className="pl-9"
+                      />
+                    </div>
+                    <FieldDescription>Temperature (°C)</FieldDescription>
+                  </Field>
                 </div>
               </div>
 
-              {/* ================= SYMPTOMS ================= */}
-              <div className="space-y-3">
-                <h2 className="text-lg md:text-xl font-semibold">Symptoms</h2>
+              {/* ── HEALTH HISTORY ── */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <ClipboardList className="w-4 h-4 text-[#00a896]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                      Health History
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Please check if any of the following apply
+                    </p>
+                  </div>
+                </div>
 
+                <div className="divide-y rounded-xl border border-gray-200 overflow-hidden">
+                  {[
+                    {
+                      key: "patientisMedicalCare",
+                      label: "Are you presently under medical care?",
+                    },
+                    {
+                      key: "patientDrugAllergy",
+                      label: "Do you have any drug allergies?",
+                    },
+                    {
+                      key: "patientFoodAllergy",
+                      label: "Do you have any food or environmental allergies?",
+                    },
+                    {
+                      key: "patientTBPositive",
+                      label:
+                        "Have you ever had tuberculosis or a positive TB test?",
+                    },
+                    {
+                      key: "patientHasClinician",
+                      label:
+                        "Have you ever been cared for by a mental health clinician?",
+                    },
+                    {
+                      key: "patientDiet",
+                      label: "Have you ever restricted your eating?",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <FieldLabel>{item.label}</FieldLabel>
+                      <Checkbox
+                        className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
+                        checked={
+                          fields[item.key as keyof typeof fields] as boolean
+                        }
+                        onCheckedChange={(checked) =>
+                          handleChange(item.key, checked)
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── SYMPTOMS ── */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <Stethoscope className="w-4 h-4 text-[#00a896]" />
+                  </div>
+                  <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                    Symptoms
+                  </h2>
+                </div>
                 <Field>
                   <Input
                     placeholder="e.g. fever, cough, headache"
@@ -808,13 +806,17 @@ export function AddRecords() {
                 </Field>
               </div>
 
-              {/* ================= DIAGNOSIS ================= */}
+              {/* ── DIAGNOSIS ── */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg md:text-xl font-semibold">
-                    Diagnosis
-                  </h2>
-
+                  <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                    <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                      <ClipboardList className="w-4 h-4 text-[#00a896]" />
+                    </div>
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                      Diagnosis
+                    </h2>
+                  </div>
                   <Button
                     type="button"
                     size="sm"
@@ -831,7 +833,7 @@ export function AddRecords() {
                       key={index}
                       className={`grid ${
                         isMobile ? "grid-cols-1" : "md:grid-cols-4"
-                      } gap-3 p-4 border rounded-xl bg-gray-50`}
+                      } gap-3 p-4 border border-gray-200 rounded-xl bg-gray-50`}
                     >
                       <Field>
                         <Input
@@ -846,7 +848,6 @@ export function AddRecords() {
                           }
                         />
                       </Field>
-
                       <Field>
                         <Input
                           placeholder="Severity"
@@ -860,7 +861,6 @@ export function AddRecords() {
                           }
                         />
                       </Field>
-
                       <Field>
                         <Input
                           placeholder="Notes"
@@ -874,7 +874,6 @@ export function AddRecords() {
                           }
                         />
                       </Field>
-
                       {patientDiagnosis.length > 1 && (
                         <div className="flex items-center">
                           <Button
@@ -892,112 +891,25 @@ export function AddRecords() {
                   ))}
                 </div>
               </div>
-              <div>
-                <h2 className="text-lg md:text-xl font-semibold">
-                  Family History
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Provide age and indicate relevant conditions
-                </p>
-              </div>
 
-              {/* TABLE HEADER */}
-              {isMobile ? (
-                <div className="space-y-4">
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="!bg-[#00a896] text-white hover:bg-[#028090]"
-                      onClick={handleAddHistory}
-                    >
-                      + Add
-                    </Button>
+              {/* ── FAMILY HISTORY ── */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-4 h-4 text-[#00a896]" />
                   </div>
-
-                  {familyHistory.map((history, index) => (
-                    <Card key={index} className="p-4 space-y-4">
-                      <Input
-                        placeholder="Relation"
-                        value={history.relation}
-                        onChange={(e) =>
-                          handleHistoryChange(index, "relation", e.target.value)
-                        }
-                      />
-
-                      <Input
-                        placeholder="Age"
-                        value={history.age}
-                        onChange={(e) =>
-                          handleHistoryChange(index, "age", e.target.value)
-                        }
-                      />
-
-                      <Input
-                        placeholder="Health Problems"
-                        value={history.healthProblems}
-                        onChange={(e) =>
-                          handleHistoryChange(
-                            index,
-                            "healthProblems",
-                            e.target.value,
-                          )
-                        }
-                      />
-
-                      <div className="flex justify-between items-center">
-                        <span>In Good Health</span>
-                        <Checkbox
-                          checked={history.goodHealth}
-                          className="size-6"
-                          onCheckedChange={(checked) =>
-                            handleHistoryChange(
-                              index,
-                              "goodHealth",
-                              checked === true,
-                            )
-                          }
-                        />
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span>Alive</span>
-                        <Checkbox
-                          checked={history.isAlive}
-                          className="size-6"
-                          onCheckedChange={(checked) =>
-                            handleHistoryChange(
-                              index,
-                              "isAlive",
-                              checked === true,
-                            )
-                          }
-                        />
-                      </div>
-
-                      {familyHistory.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          className="w-full"
-                          onClick={() => handleRemoveHistory(index)}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </Card>
-                  ))}
+                  <div>
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                      Family History
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Provide age and indicate relevant conditions
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <>
-                  {/* TABLE HEADER */}
-                  <div className="grid grid-cols-[120px_80px_1fr_120px_80px_100px] px-3 text-l text-gray-600 uppercase items-center">
-                    <span>Relation</span>
-                    <span>Age</span>
-                    <span>Health Problems</span>
-                    <span className="text-center">In Good Health</span>
-                    <span className="text-center">Alive</span>
 
+                {isMobile ? (
+                  <div className="space-y-4">
                     <div className="flex justify-end">
                       <Button
                         type="button"
@@ -1008,48 +920,220 @@ export function AddRecords() {
                         + Add
                       </Button>
                     </div>
-                  </div>
-
-                  {/* ROWS */}
-                  <div className="divide-y border rounded-xl overflow-hidden">
                     {familyHistory.map((history, index) => (
-                      <div
+                      <Card
                         key={index}
-                        className="grid grid-cols-[120px_80px_1fr_120px_80px_100px] items-center gap-3 p-3"
+                        className="p-4 space-y-4 border border-gray-200"
                       >
-                        {/* your existing row code unchanged */}
-                      </div>
+                        <Input
+                          placeholder="Relation"
+                          value={history.relation}
+                          onChange={(e) =>
+                            handleHistoryChange(
+                              index,
+                              "relation",
+                              e.target.value,
+                            )
+                          }
+                        />
+                        <Input
+                          placeholder="Age"
+                          value={history.age}
+                          onChange={(e) =>
+                            handleHistoryChange(index, "age", e.target.value)
+                          }
+                        />
+                        <Input
+                          placeholder="Health Problems"
+                          value={history.healthProblems}
+                          onChange={(e) =>
+                            handleHistoryChange(
+                              index,
+                              "healthProblems",
+                              e.target.value,
+                            )
+                          }
+                        />
+                        <div className="flex justify-between items-center hover:bg-gray-50 rounded-lg p-2 transition-colors">
+                          <span className="text-sm text-gray-700">
+                            In Good Health
+                          </span>
+                          <Checkbox
+                            checked={history.goodHealth}
+                            className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
+                            onCheckedChange={(checked) =>
+                              handleHistoryChange(
+                                index,
+                                "goodHealth",
+                                checked === true,
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="flex justify-between items-center hover:bg-gray-50 rounded-lg p-2 transition-colors">
+                          <span className="text-sm text-gray-700">Alive</span>
+                          <Checkbox
+                            checked={history.isAlive}
+                            className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
+                            onCheckedChange={(checked) =>
+                              handleHistoryChange(
+                                index,
+                                "isAlive",
+                                checked === true,
+                              )
+                            }
+                          />
+                        </div>
+                        {familyHistory.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="w-full !bg-red-400 text-white"
+                            onClick={() => handleRemoveHistory(index)}
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </Card>
                     ))}
                   </div>
-                </>
-              )}
-              <h2 className="text-lg md:text-xl font-semibold">
-                Privacy Notice
-              </h2>
-              <div>
-                <Field>
-                  <label className="flex items-start gap-3 p-3 ">
-                    <Checkbox
-                      className="size-5 rounded-none !border-black
-                        data-[state=unchecked]:!bg-white
-                        data-[state=checked]:!bg-[#00a896]"
-                    />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-[140px_80px_1fr_120px_80px_100px] px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 rounded-lg">
+                      <span>Relation</span>
+                      <span>Age</span>
+                      <span>Health Problems</span>
+                      <span className="text-center">Good Health</span>
+                      <span className="text-center">Alive</span>
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="!bg-[#00a896] text-white hover:bg-[#028090] h-7 text-xs"
+                          onClick={handleAddHistory}
+                        >
+                          + Add
+                        </Button>
+                      </div>
+                    </div>
 
-                    <span className="text-sm text-gray-700 leading-relaxed">
-                      I confirm that I have informed the patient about the
-                      privacy notice.
-                    </span>
-                  </label>
-                </Field>
+                    <div className="divide-y border border-gray-200 rounded-xl overflow-hidden">
+                      {familyHistory.map((history, index) => (
+                        <div
+                          key={index}
+                          className="grid grid-cols-[140px_80px_1fr_120px_80px_100px] items-center gap-3 p-3 hover:bg-gray-50 transition-colors"
+                        >
+                          <Input
+                            placeholder="e.g. Father"
+                            value={history.relation}
+                            onChange={(e) =>
+                              handleHistoryChange(
+                                index,
+                                "relation",
+                                e.target.value,
+                              )
+                            }
+                          />
+                          <Input
+                            placeholder="Age"
+                            value={history.age}
+                            onChange={(e) =>
+                              handleHistoryChange(index, "age", e.target.value)
+                            }
+                          />
+                          <Input
+                            placeholder="Health Problems"
+                            value={history.healthProblems}
+                            onChange={(e) =>
+                              handleHistoryChange(
+                                index,
+                                "healthProblems",
+                                e.target.value,
+                              )
+                            }
+                          />
+                          <div className="flex justify-center">
+                            <Checkbox
+                              checked={history.goodHealth}
+                              className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
+                              onCheckedChange={(checked) =>
+                                handleHistoryChange(
+                                  index,
+                                  "goodHealth",
+                                  checked === true,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="flex justify-center">
+                            <Checkbox
+                              checked={history.isAlive}
+                              className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
+                              onCheckedChange={(checked) =>
+                                handleHistoryChange(
+                                  index,
+                                  "isAlive",
+                                  checked === true,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="flex justify-end">
+                            {familyHistory.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="!bg-red-400 text-white h-8 text-xs"
+                                onClick={() => handleRemoveHistory(index)}
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* ── PRIVACY NOTICE ── */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-[#00a896]" />
+                  </div>
+                  <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                    Privacy Notice
+                  </h2>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <Field>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        className="size-5 mt-0.5 rounded-none !border-gray-400
+                          data-[state=unchecked]:!bg-white
+                          data-[state=checked]:!bg-[#00a896]"
+                      />
+                      <span className="text-sm text-gray-700 leading-relaxed">
+                        I confirm that I have informed the patient about the
+                        privacy notice.
+                      </span>
+                    </label>
+                  </Field>
+                </div>
               </div>
             </div>
           </Card>
         </div>
       </Card>
 
+      {/* ── SHARE WITH LINKED USER ── */}
       {!userIsAdmin && linkedUsers.length > 0 && (
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <Label className="text-lg md:text-xl font-medium text-blue-800 mb-2">
+        <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+          <Label className="text-base font-semibold text-blue-800 mb-3 block">
             {userIsSecretary && "Share with Doctor"}
             {userIsDoctor && "Share with Secretary"}
           </Label>
@@ -1076,11 +1160,12 @@ export function AddRecords() {
         </div>
       )}
 
-      <div className="flex justify-center mt-8 md:mt-10">
+      {/* ── SUBMIT ── */}
+      <div className="flex justify-center mt-8 md:mt-10 pb-6">
         <Button
           type="submit"
           disabled={isLoading}
-          className="!bg-orange-400 hover:!bg-orange-500 !text-white !px-8 md:!px-10 !py-4 md:!py-6 !text-xl md:!text-2xl rounded-lg md:rounded-xl transition-all disabled:opacity-50"
+          className="!bg-[#00a896] hover:!bg-[#028090] !text-white !px-12 !py-6 !text-lg font-semibold rounded-xl transition-all disabled:opacity-50 shadow-md"
         >
           {isLoading ? "Saving..." : "Save Record"}
         </Button>

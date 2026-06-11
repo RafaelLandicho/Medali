@@ -29,6 +29,7 @@ import {
   Heart,
   Users,
   FileText,
+  ClipboardList,
 } from "lucide-react";
 
 type FullDetails = {
@@ -89,13 +90,17 @@ export function ViewFullPatient({ patient }: FullDetails) {
       <div className="flex gap-2">
         <Button
           onClick={() => setPreviousRecord(null)}
-          className={`flex-1 ${previousRecord === null ? "!bg-orange-500 text-white" : "!bg-gray-200 text-gray-700"}`}
+          className={`flex-1 font-semibold transition-all ${
+            previousRecord === null
+              ? "!bg-[#00a896] text-white shadow-md"
+              : "!bg-white text-[#00a896] border border-[#00a896]"
+          }`}
         >
           Current Record
         </Button>
         <Button
           onClick={handleDownloadImage}
-          className="flex-1 !bg-orange-500 hover:!bg-orange-600 text-white"
+          className="flex-1 !bg-[#ff6b6b] hover:!bg-[#e05555] text-white font-semibold shadow-md transition-all"
         >
           <Download className="w-4 h-4 mr-2" />
           Download
@@ -113,7 +118,7 @@ export function ViewFullPatient({ patient }: FullDetails) {
             }
           }}
         >
-          <SelectTrigger className="w-full !bg-white border-gray-300">
+          <SelectTrigger className="w-full !bg-white border-[#00a896] text-[#007a6e] focus:ring-[#00a896]">
             <SelectValue placeholder="Select previous record" />
           </SelectTrigger>
           <SelectContent>
@@ -131,38 +136,46 @@ export function ViewFullPatient({ patient }: FullDetails) {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      {/* DOWNLOAD BUTTON - Sticky on mobile */}
+      {/* TOOLBAR */}
       <div
-        className={`${isMobile ? "sticky top-0 z-10 bg-gray-100 py-2" : ""}`}
+        className={`${
+          isMobile
+            ? "sticky top-0 z-10 bg-[#f0faf9] py-2 px-2 rounded-xl shadow-sm"
+            : ""
+        }`}
       >
-        {/* RECORD SELECTOR */}
         {isMobile ? (
           <MobileRecordSelector />
         ) : (
           <div className="flex flex-wrap justify-center gap-2">
+            {/* Current Record Button */}
             <Button
               onClick={() => setPreviousRecord(null)}
-              className={
+              className={`font-semibold transition-all ${
                 previousRecord === null
-                  ? "!bg-orange-500 text-white"
-                  : "!bg-gray-200 text-gray-700"
-              }
+                  ? "!bg-[#00a896] text-white shadow-md"
+                  : "!bg-white text-[#00a896] border border-[#00a896] hover:!bg-[#e6f7f5]"
+              }`}
             >
+              <ClipboardList className="w-4 h-4 mr-2" />
               Current Record
             </Button>
+
+            {/* History Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="!bg-[#7b003b] text-white">
+                <Button className="!bg-[#007a6e] hover:!bg-[#006058] text-white font-semibold shadow-md transition-all">
                   <Eye className="w-4 h-4 mr-2" />
-                  Open
+                  History
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent className="border-[#00a896]/30 shadow-lg">
                 <DropdownMenuGroup>
                   {medicalHistory.map((_, index) => (
                     <DropdownMenuItem
                       key={index}
                       onClick={() => setPreviousRecord(index)}
+                      className="cursor-pointer hover:bg-[#e6f7f5] focus:bg-[#e6f7f5] text-[#007a6e]"
                     >
                       Record {index + 1}
                     </DropdownMenuItem>
@@ -171,66 +184,72 @@ export function ViewFullPatient({ patient }: FullDetails) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* DOWNLOAD */}
-            <div className="flex justify-center">
-              <Button
-                onClick={handleDownloadImage}
-                className="!bg-orange-500 hover:!bg-orange-600 text-white px-8"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Medical Record
-              </Button>
-            </div>
+            {/* Download Button */}
+            <Button
+              onClick={handleDownloadImage}
+              className="!bg-[#ff6b6b] hover:!bg-[#e05555] text-white font-semibold px-8 shadow-md transition-all"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download Medical Record
+            </Button>
           </div>
         )}
       </div>
 
-      {/* DOCUMENT */}
-      <div className="overflow-auto max-h-[85vh] bg-gray-100 p-2 md:p-4 rounded-xl">
+      {/* DOCUMENT WRAPPER */}
+      <div className="overflow-auto max-h-[85vh] bg-[#e6f7f5] p-2 md:p-4 rounded-xl">
         <div
           ref={printRef}
-          className="w-full max-w-[794px] min-h-[1123px] bg-white mx-auto shadow-xl border border-gray-300 text-[11px] md:text-[13px] text-[#5a0033] font-sans"
+          className="w-full max-w-[794px] min-h-[1123px] bg-white mx-auto shadow-xl border border-[#b2e4df] text-[11px] md:text-[13px] text-[#004d45] font-sans"
         >
           {/* HEADER */}
-          <div className="text-center pt-6 md:pt-10 pb-3 md:pb-4 px-4">
-            <h1 className="text-xl md:text-3xl font-bold tracking-wide text-[#7b003b] uppercase">
+          <div className="text-center pt-6 md:pt-10 pb-3 md:pb-4 px-4 bg-gradient-to-br from-[#00a896]/10 to-white">
+            <div className="flex justify-center mb-2 md:mb-3">
+              <div className="bg-[#00a896]/10 rounded-full p-2 md:p-3">
+                <FileText className="w-6 h-6 md:w-8 md:h-8 text-[#00a896]" />
+              </div>
+            </div>
+            <h1 className="text-xl md:text-3xl font-bold tracking-wide text-[#00a896] uppercase">
               Medical Record
             </h1>
+            <p className="text-[10px] md:text-xs text-[#007a6e]/60 mt-1 tracking-widest uppercase">
+              Confidential Patient Document
+            </p>
             {previousRecord !== null && (
-              <p className="text-xs text-gray-500 mt-2">
+              <span className="inline-block mt-2 text-xs bg-amber-100 text-amber-700 border border-amber-300 rounded-full px-3 py-0.5">
                 Viewing Historical Record {previousRecord + 1}
-              </p>
+              </span>
             )}
           </div>
 
+          {/* Accent bar */}
           <div className="flex w-full h-2 md:h-3 mb-4 md:mb-8">
-            <div className="w-1/2 bg-red-500"></div>
-            <div className="w-1/2 bg-orange-300"></div>
+            <div className="w-1/2 bg-[#00a896]"></div>
+            <div className="w-1/2 bg-[#ffd166]"></div>
           </div>
 
           {/* RECORD NO + DATE */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-10 px-4 md:px-10 mb-6 md:mb-8">
             <div>
-              <p className="font-semibold text-xs md:text-sm">
+              <p className="font-semibold text-xs md:text-sm text-[#00a896]">
                 Medical Record No.
               </p>
-              <p className="text-xs md:text-sm break-all">{fields.id}</p>
+              <p className="text-xs md:text-sm break-all text-[#004d45]">
+                {fields.id}
+              </p>
             </div>
-
             <div>
-              <p className="font-semibold text-xs md:text-sm">Record Date</p>
-              <p className="text-xs md:text-sm">
+              <p className="font-semibold text-xs md:text-sm text-[#00a896]">
+                Record Date
+              </p>
+              <p className="text-xs md:text-sm text-[#004d45]">
                 {new Date().toLocaleDateString()}
               </p>
             </div>
           </div>
 
-          {/* PATIENT INFO */}
-          <div className="px-4 md:px-10">
-            <div className="bg-orange-200 text-[#7b003b] font-bold px-2 md:px-3 py-1 mb-3 md:mb-4 text-xs md:text-sm">
-              Patient Information
-            </div>
-          </div>
+          {/* ── PATIENT INFORMATION ── */}
+          <SectionHeader label="Patient Information" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 md:gap-x-14 px-4 md:px-10 mb-6 md:mb-8">
             <Info
@@ -244,51 +263,36 @@ export function ViewFullPatient({ patient }: FullDetails) {
             <Info label="Symptoms" value={showPrevious.symptoms} />
           </div>
 
-          {/* VITAL SIGNS */}
-          <div className="px-4 md:px-10">
-            <div className="bg-orange-200 text-[#7b003b] font-bold px-2 md:px-3 py-1 mb-3 md:mb-4 text-xs md:text-sm">
-              Vital Signs
-            </div>
-          </div>
+          {/* ── VITAL SIGNS ── */}
+          <SectionHeader label="Vital Signs" />
 
           {isMobile ? (
-            // Mobile Vital Signs - Card based
             <div className="grid grid-cols-2 gap-3 px-4 md:px-10 mb-6 md:mb-8">
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Heart className="w-3 h-3 text-[#7b003b]" />
-                  <p className="font-semibold text-xs">Blood Pressure</p>
-                </div>
-                <p className="text-sm">{showPrevious.bloodPressure || "-"}</p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Heart className="w-3 h-3 text-[#7b003b]" />
-                  <p className="font-semibold text-xs">Heart Rate</p>
-                </div>
-                <p className="text-sm">{showPrevious.heartRate || "-"}</p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-semibold text-xs mb-1">Respiratory Rate</p>
-                <p className="text-sm">{showPrevious.respiratoryRate || "-"}</p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-semibold text-xs mb-1">Temperature</p>
-                <p className="text-sm">{showPrevious.temperature || "-"}</p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-semibold text-xs mb-1">Oxygen Saturation</p>
-                <p className="text-sm">
-                  {showPrevious.oxygenSaturation || "-"}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-semibold text-xs mb-1">Height / Weight</p>
-                <p className="text-sm">{`${showPrevious.height || "-"} / ${showPrevious.weight || "-"}`}</p>
-              </div>
+              <VitalCard
+                icon={<Heart className="w-3 h-3 text-[#ff6b6b]" />}
+                label="Blood Pressure"
+                value={showPrevious.bloodPressure}
+              />
+              <VitalCard
+                icon={<Heart className="w-3 h-3 text-[#ff6b6b]" />}
+                label="Heart Rate"
+                value={showPrevious.heartRate}
+              />
+              <VitalCard
+                label="Respiratory Rate"
+                value={showPrevious.respiratoryRate}
+              />
+              <VitalCard label="Temperature" value={showPrevious.temperature} />
+              <VitalCard
+                label="Oxygen Saturation"
+                value={showPrevious.oxygenSaturation}
+              />
+              <VitalCard
+                label="Height / Weight"
+                value={`${showPrevious.height || "-"} / ${showPrevious.weight || "-"}`}
+              />
             </div>
           ) : (
-            // Desktop Vital Signs
             <div className="grid grid-cols-2 gap-x-14 gap-y-4 px-10 mb-8">
               <Info label="Blood Pressure" value={showPrevious.bloodPressure} />
               <Info label="Heart Rate" value={showPrevious.heartRate} />
@@ -308,31 +312,35 @@ export function ViewFullPatient({ patient }: FullDetails) {
             </div>
           )}
 
-          {/* DIAGNOSIS */}
+          {/* ── DIAGNOSIS REPORT ── */}
           <div className="px-4 md:px-10">
-            <div className="bg-orange-200 text-[#7b003b] font-bold px-2 md:px-3 py-1 mb-3 md:mb-4 text-xs md:text-sm">
-              Diagnosis Report
-            </div>
+            <SectionHeader label="Diagnosis Report" />
 
             {isMobile ? (
-              // Mobile Diagnosis View - Card based
               <div className="space-y-3 mb-8">
                 {showPrevious.patientDiagnosis?.length ? (
                   showPrevious.patientDiagnosis.map((diag, i) => (
-                    <div key={i} className="border rounded-lg p-3 bg-gray-50">
+                    <div
+                      key={i}
+                      className="border border-[#b2e4df] rounded-xl p-3 bg-[#f0faf9]"
+                    >
                       <div className="flex items-start gap-2">
-                        <Stethoscope className="w-4 h-4 text-[#7b003b] mt-0.5" />
+                        <Stethoscope className="w-4 h-4 text-[#00a896] mt-0.5" />
                         <div className="flex-1">
-                          <p className="font-semibold text-sm">
+                          <p className="font-semibold text-sm text-[#004d45]">
                             {diag.diagnosis || "-"}
                           </p>
                           <p className="text-xs text-gray-600 mt-1">
-                            <span className="font-medium">Severity:</span>{" "}
+                            <span className="font-medium text-[#007a6e]">
+                              Severity:
+                            </span>{" "}
                             {diag.severity || "-"}
                           </p>
                           {diag.notes && (
                             <p className="text-xs text-gray-500 mt-1">
-                              <span className="font-medium">Notes:</span>{" "}
+                              <span className="font-medium text-[#007a6e]">
+                                Notes:
+                              </span>{" "}
                               {diag.notes}
                             </p>
                           )}
@@ -341,25 +349,27 @@ export function ViewFullPatient({ patient }: FullDetails) {
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-gray-500 py-4">
+                  <p className="text-center text-gray-400 py-4 italic">
                     No diagnosis available
                   </p>
                 )}
               </div>
             ) : (
-              // Desktop Diagnosis View - Table
               <table className="w-full border-collapse text-[11px] md:text-[12px] mb-8 md:mb-10">
                 <thead>
-                  <tr className="bg-gray-100 text-left">
-                    <th className="p-2">Diagnosis</th>
+                  <tr className="bg-[#e6f7f5] text-left text-[#007a6e]">
+                    <th className="p-2 rounded-tl-lg">Diagnosis</th>
                     <th className="p-2">Severity</th>
-                    <th className="p-2">Notes</th>
+                    <th className="p-2 rounded-tr-lg">Notes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {showPrevious.patientDiagnosis?.length ? (
                     showPrevious.patientDiagnosis.map((diag, i) => (
-                      <tr key={i} className="border-b">
+                      <tr
+                        key={i}
+                        className="border-b border-[#e6f7f5] hover:bg-[#f7fdfc] transition-colors"
+                      >
                         <td className="p-2">{diag.diagnosis || "-"}</td>
                         <td className="p-2">{diag.severity || "-"}</td>
                         <td className="p-2">{diag.notes || "-"}</td>
@@ -367,7 +377,10 @@ export function ViewFullPatient({ patient }: FullDetails) {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={3} className="p-3 text-center">
+                      <td
+                        colSpan={3}
+                        className="p-3 text-center text-gray-400 italic"
+                      >
                         No diagnosis available
                       </td>
                     </tr>
@@ -377,39 +390,47 @@ export function ViewFullPatient({ patient }: FullDetails) {
             )}
           </div>
 
-          {/* FAMILY HISTORY */}
+          {/* ── FAMILY HISTORY ── */}
           <div className="px-4 md:px-10">
-            <div className="bg-orange-200 text-[#7b003b] font-bold px-2 md:px-3 py-1 mb-3 md:mb-4 text-xs md:text-sm">
-              Family History
-            </div>
+            <SectionHeader label="Family History" />
 
             {isMobile ? (
-              // Mobile Family History - Card based
               <div className="space-y-3 mb-8">
                 {showPrevious.familyHistory?.length ? (
                   showPrevious.familyHistory.map((fh, i) => (
-                    <div key={i} className="border rounded-lg p-3 bg-gray-50">
+                    <div
+                      key={i}
+                      className="border border-[#b2e4df] rounded-xl p-3 bg-[#f0faf9]"
+                    >
                       <div className="flex items-start gap-2">
-                        <Users className="w-4 h-4 text-[#7b003b] mt-0.5" />
+                        <Users className="w-4 h-4 text-[#00a896] mt-0.5" />
                         <div className="flex-1">
-                          <p className="font-semibold text-sm">
+                          <p className="font-semibold text-sm text-[#004d45]">
                             {fh.relation || "-"}
                           </p>
                           <p className="text-xs text-gray-600 mt-1">
-                            <span className="font-medium">Age:</span>{" "}
+                            <span className="font-medium text-[#007a6e]">
+                              Age:
+                            </span>{" "}
                             {fh.age || "-"}
                           </p>
                           <p className="text-xs text-gray-600">
-                            <span className="font-medium">Condition:</span>{" "}
+                            <span className="font-medium text-[#007a6e]">
+                              Condition:
+                            </span>{" "}
                             {fh.healthProblems || "-"}
                           </p>
                           <div className="flex gap-4 mt-2">
                             <span className="text-xs">
-                              <span className="font-medium">Healthy:</span>{" "}
+                              <span className="font-medium text-[#007a6e]">
+                                Healthy:
+                              </span>{" "}
                               {fh.goodHealth ? "Yes" : "No"}
                             </span>
                             <span className="text-xs">
-                              <span className="font-medium">Alive:</span>{" "}
+                              <span className="font-medium text-[#007a6e]">
+                                Alive:
+                              </span>{" "}
                               {fh.isAlive ? "Yes" : "No"}
                             </span>
                           </div>
@@ -418,16 +439,15 @@ export function ViewFullPatient({ patient }: FullDetails) {
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-gray-500 py-4">
+                  <p className="text-center text-gray-400 py-4 italic">
                     No family history recorded
                   </p>
                 )}
               </div>
             ) : (
-              // Desktop Family History - Table
               <table className="w-full border-collapse text-[11px] md:text-[12px] mb-8 md:mb-12">
                 <thead>
-                  <tr className="bg-gray-100 text-left">
+                  <tr className="bg-[#e6f7f5] text-left text-[#007a6e]">
                     <th className="p-2">Relation</th>
                     <th className="p-2">Age</th>
                     <th className="p-2">Condition</th>
@@ -438,7 +458,10 @@ export function ViewFullPatient({ patient }: FullDetails) {
                 <tbody>
                   {showPrevious.familyHistory?.length ? (
                     showPrevious.familyHistory.map((fh, i) => (
-                      <tr key={i} className="border-b">
+                      <tr
+                        key={i}
+                        className="border-b border-[#e6f7f5] hover:bg-[#f7fdfc] transition-colors"
+                      >
                         <td className="p-2">{fh.relation || "-"}</td>
                         <td className="p-2">{fh.age || "-"}</td>
                         <td className="p-2">{fh.healthProblems || "-"}</td>
@@ -448,7 +471,10 @@ export function ViewFullPatient({ patient }: FullDetails) {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="p-3 text-center">
+                      <td
+                        colSpan={5}
+                        className="p-3 text-center text-gray-400 italic"
+                      >
                         No family history recorded
                       </td>
                     </tr>
@@ -461,32 +487,38 @@ export function ViewFullPatient({ patient }: FullDetails) {
           {/* FOOTER */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-0 px-4 md:px-10 mt-10 md:mt-20 pb-10 md:pb-20">
             <div>
-              <p className="font-semibold text-xs md:text-sm">
+              <p className="font-semibold text-xs md:text-sm text-[#00a896]">
                 Attending Physician
               </p>
-              <p className="text-xs md:text-sm">
+              <p className="text-xs md:text-sm text-[#004d45]">
                 Dr. {user?.firstName} {user?.lastName}
               </p>
 
               <div className="mt-4 md:mt-6">
-                <p className="font-semibold text-xs md:text-sm">
+                <p className="font-semibold text-xs md:text-sm text-[#00a896]">
                   Date Generated
                 </p>
-                <p className="text-xs md:text-sm">
+                <p className="text-xs md:text-sm text-[#004d45]">
                   {new Date().toLocaleDateString()}
                 </p>
               </div>
             </div>
 
             <div className="text-center mt-4 md:mt-0">
-              <p className="font-semibold text-xs md:text-sm">
+              <p className="font-semibold text-xs md:text-sm text-[#00a896]">
                 Authorized Signature
               </p>
-              <div className="border-t border-black w-full max-w-[200px] mx-auto mt-6 md:mt-10"></div>
-              <p className="mt-2 text-xs md:text-sm">
+              <div className="border-t-2 border-[#00a896] w-full max-w-[200px] mx-auto mt-6 md:mt-10"></div>
+              <p className="mt-2 text-xs md:text-sm text-[#004d45]">
                 Dr. {user?.firstName} {user?.lastName}
               </p>
             </div>
+          </div>
+
+          {/* Bottom accent bar */}
+          <div className="flex w-full h-1.5">
+            <div className="w-1/2 bg-[#00a896]"></div>
+            <div className="w-1/2 bg-[#ffd166]"></div>
           </div>
         </div>
       </div>
@@ -494,13 +526,48 @@ export function ViewFullPatient({ patient }: FullDetails) {
   );
 }
 
-function Info({ label, value }: { label: string; value?: string | number }) {
-  const isMobile = useIsMobile();
+// ── Shared sub-components ──────────────────────────────────────────────────
 
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <div className="bg-[#00a896] text-white font-bold px-2 md:px-3 py-1.5 mb-3 md:mb-4 text-xs md:text-sm rounded-sm flex items-center gap-2 tracking-wide uppercase">
+      {label}
+    </div>
+  );
+}
+
+function VitalCard({
+  icon,
+  label,
+  value,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value?: string | number;
+}) {
+  return (
+    <div className="bg-[#f0faf9] border border-[#b2e4df] p-3 rounded-xl">
+      {icon && (
+        <div className="flex items-center gap-1.5 mb-1">
+          {icon}
+          <p className="font-semibold text-xs text-[#007a6e]">{label}</p>
+        </div>
+      )}
+      {!icon && (
+        <p className="font-semibold text-xs text-[#007a6e] mb-1">{label}</p>
+      )}
+      <p className="text-sm text-[#004d45]">{value || "-"}</p>
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value?: string | number }) {
   return (
     <div>
-      <p className="font-semibold text-xs md:text-sm">{label}</p>
-      <p className="text-xs md:text-sm break-words">{value || "-"}</p>
+      <p className="font-semibold text-xs md:text-sm text-[#00a896]">{label}</p>
+      <p className="text-xs md:text-sm break-words text-[#004d45]">
+        {value || "-"}
+      </p>
     </div>
   );
 }

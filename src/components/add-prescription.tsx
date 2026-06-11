@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ClipboardList, Pill, Stethoscope, FileText, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { db } from "@/firebaseConfig";
 import { ref, push, set } from "firebase/database";
@@ -169,23 +170,63 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
       >
         <FieldGroup>
           <FieldSet className="space-y-6">
-            <h3 className="text-xl font-semibold">
-              Prescription for {patient.firstName} {patient.lastName}
-            </h3>
+            {/* ── HEADER ── */}
+            <div className="text-center mb-8">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">
+                Prescription Form
+              </h1>
+              <div className="mt-4 h-1 w-16 bg-[#00c4b4] rounded-full mx-auto" />
+            </div>
 
-            {/* 2 COLUMN LAYOUT */}
+            {/* ── PATIENT BANNER ── */}
+            <div className="flex items-center gap-4 p-4 rounded-xl border border-[#00c4b4]/30 bg-[#00c4b4]/5">
+              <div className="w-10 h-10 rounded-full bg-[#00c4b4]/15 flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 text-[#00a896]" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-[#00a896] uppercase tracking-widest mb-0.5">
+                  Patient
+                </p>
+                <p className="text-base font-bold text-gray-800">
+                  {patient.firstName} {patient.lastName}
+                </p>
+                {(patient.age || patient.gender) && (
+                  <p className="text-sm text-gray-500">
+                    {patient.gender && <span>{patient.gender}</span>}
+                    {patient.age && patient.gender && <span> · </span>}
+                    {patient.age && <span>{patient.age} yrs old</span>}
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className="space-y-10 max-w-[1100px] mx-auto">
-              {/* ================= DIAGNOSIS ================= */}
-              <Field className="space-y-3">
-                <FieldLabel className="text-lg font-semibold">
-                  Diagnosis
-                </FieldLabel>
+              {/* ── DIAGNOSIS ── */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                    <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                      <ClipboardList className="w-4 h-4 text-[#00a896]" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      Diagnosis
+                    </h2>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="!bg-[#00a896] !text-white hover:!bg-[#028090]"
+                    onClick={handleAddDiagnosis}
+                  >
+                    + Add
+                  </Button>
+                </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {diagnosisPres.map((item, index) => (
                     <div
                       key={index}
-                      className="p-4 border rounded-xl bg-muted/30 space-y-3"
+                      className="p-4 border border-gray-200 rounded-xl bg-gray-50 space-y-3"
                     >
                       <div className="grid md:grid-cols-2 gap-3">
                         <Input
@@ -211,7 +252,6 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
                           }
                         />
                       </div>
-
                       <Input
                         placeholder="Notes"
                         value={item.notes}
@@ -219,11 +259,12 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
                           handleDiagnosisChange(index, "notes", e.target.value)
                         }
                       />
-
                       {diagnosisPres.length > 1 && (
                         <Button
                           type="button"
+                          size="sm"
                           variant="destructive"
+                          className="!bg-red-400 text-white"
                           onClick={() => handleRemoveDiagnosis(index)}
                         >
                           Remove Diagnosis
@@ -231,40 +272,36 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
                       )}
                     </div>
                   ))}
-
-                  <Button
-                    type="button"
-                    className="!bg-[#00a896] !text-white w-full"
-                    onClick={handleAddDiagnosis}
-                  >
-                    + Add Diagnosis
-                  </Button>
                 </div>
-              </Field>
+              </div>
 
-              {/* ================= DRUGS ================= */}
-
-              <Field className="space-y-3">
-                <FieldLabel className="text-lg font-semibold">
-                  Drug Prescriptions
-                </FieldLabel>
-
-                <div className="border rounded-xl overflow-hidden">
-                  {/* TABLE HEADER */}
-                  <div className="grid grid-cols-6 bg-muted px-4 py-3 font-medium text-sm">
-                    <div>Medicine</div>
-                    <div>Unit</div>
-                    <div>Dosage</div>
-                    <div>Purpose</div>
-                    <div>Frequency</div>
-                    <div className="text-center">Action</div>
+              {/* ── DRUG PRESCRIPTIONS ── */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <Pill className="w-4 h-4 text-[#00a896]" />
                   </div>
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Drug Prescriptions
+                  </h2>
+                </div>
 
-                  {/* TABLE BODY */}
+                {/* TABLE HEADER */}
+                <div className="grid grid-cols-6 bg-gray-50 border border-gray-200 rounded-t-xl px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <div>Medicine</div>
+                  <div>Unit</div>
+                  <div>Dosage</div>
+                  <div>Purpose</div>
+                  <div>Frequency</div>
+                  <div className="text-center">Action</div>
+                </div>
+
+                {/* TABLE BODY */}
+                <div className="border border-t-0 border-gray-200 rounded-b-xl overflow-hidden divide-y divide-gray-200">
                   {prescriptions.map((drug, index) => (
                     <div
                       key={index}
-                      className="grid grid-cols-6 gap-3 px-4 py-3 border-t items-center"
+                      className="grid grid-cols-6 gap-3 px-4 py-3 items-center hover:bg-gray-50 transition-colors"
                     >
                       <Input
                         placeholder="Paracetamol"
@@ -277,7 +314,6 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
                           )
                         }
                       />
-
                       <Input
                         placeholder="Tablet / ml"
                         value={drug.unit}
@@ -289,7 +325,6 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
                           )
                         }
                       />
-
                       <Input
                         placeholder="500mg"
                         value={drug.dosage}
@@ -301,7 +336,6 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
                           )
                         }
                       />
-
                       <Input
                         placeholder="Pain relief"
                         value={drug.purpose}
@@ -313,7 +347,6 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
                           )
                         }
                       />
-
                       <Input
                         placeholder="2x a day"
                         value={drug.frequency}
@@ -325,13 +358,13 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
                           )
                         }
                       />
-
                       <div className="flex justify-center">
                         {prescriptions.length > 1 && (
                           <Button
                             type="button"
                             size="sm"
                             variant="destructive"
+                            className="!bg-red-400 text-white h-8 text-xs"
                             onClick={() => handleRemovePrescription(index)}
                           >
                             Remove
@@ -344,45 +377,63 @@ export function AddPrescription({ patient }: AddPrescriptionProps) {
 
                 <Button
                   type="button"
-                  className="!bg-[#00a896] !text-white w-full"
+                  size="sm"
+                  className="!bg-[#00a896] !text-white hover:!bg-[#028090]"
                   onClick={handleAddPrescription}
                 >
                   + Add Drug Row
                 </Button>
-              </Field>
-
-              {/* ================= EXAM + RECO ================= */}
-              <div className="grid md:grid-cols-2 gap-6">
-                <Field>
-                  <FieldLabel>Examination</FieldLabel>
-                  <Input
-                    value={fields.patientExamination}
-                    onChange={(e) =>
-                      handleChange("patientExamination", e.target.value)
-                    }
-                  />
-                </Field>
-
-                <Field>
-                  <FieldLabel>Recommendations</FieldLabel>
-                  <Input
-                    value={fields.patientRecommendation}
-                    onChange={(e) =>
-                      handleChange("patientRecommendation", e.target.value)
-                    }
-                  />
-                </Field>
               </div>
 
-              {/* ================= SAVE BUTTON ================= */}
-              <Field className="lg:col-span-2">
+              {/* ── EXAMINATION & RECOMMENDATIONS ── */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+                    <Stethoscope className="w-4 h-4 text-[#00a896]" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Examination & Recommendations
+                  </h2>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Field>
+                    <FieldLabel className="text-sm text-gray-600 mb-1 block">
+                      Examination
+                    </FieldLabel>
+                    <Input
+                      placeholder="e.g. Physical examination findings..."
+                      value={fields.patientExamination}
+                      onChange={(e) =>
+                        handleChange("patientExamination", e.target.value)
+                      }
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel className="text-sm text-gray-600 mb-1 block">
+                      Recommendations
+                    </FieldLabel>
+                    <Input
+                      placeholder="e.g. Rest, hydration, follow-up in 3 days..."
+                      value={fields.patientRecommendation}
+                      onChange={(e) =>
+                        handleChange("patientRecommendation", e.target.value)
+                      }
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              {/* ── SAVE BUTTON ── */}
+              <div className="flex justify-center pb-6">
                 <Button
                   type="submit"
-                  className="!bg-[#00a896] !text-white w-full h-12 text-lg"
+                  className="!bg-[#00a896] hover:!bg-[#028090] !text-white !px-12 !py-6 !text-lg font-semibold rounded-xl transition-all shadow-md"
                 >
                   Save Prescription
                 </Button>
-              </Field>
+              </div>
             </div>
           </FieldSet>
         </FieldGroup>

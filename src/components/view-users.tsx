@@ -10,10 +10,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Trash2, X, AlertTriangle } from "lucide-react";
 import { CheckCircle, PlusCircle } from "lucide-react";
 import { db } from "@/firebaseConfig";
-import { ref, onValue, update, get } from "firebase/database";
+import { ref, onValue, update, get, remove } from "firebase/database";
 import { useAuth } from "@/auth/authprovider";
 import {
   Card,
@@ -25,6 +25,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import linkPic from "./images/link.png";
 import { useNavigate } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 export type User = {
   id: string;
   username: string;
@@ -61,13 +70,14 @@ function getEarliestSchedule(user: User) {
   if (!user.schedule || user.schedule.length === 0) return null;
   return user.schedule[0];
 }
+
 function getAvatar(id: string, type?: string) {
   if (type?.toLowerCase() === "doctor") {
     return `https://i.pravatar.cc/300?u=doctor-${id}`;
   }
-
   return `https://i.pravatar.cc/300?u=secretary-${id}`;
 }
+
 export function ViewUsers() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -77,6 +87,14 @@ export function ViewUsers() {
   const [search, setSearch] = React.useState("");
   const [filter, setFilter] = React.useState<keyof User>("firstName");
   const [open, setOpen] = React.useState(false);
+
+  // Delete confirmation state
+  const [userToDelete, setUserToDelete] = React.useState<User | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  // Check if current user is admin
+  const isAdmin = user?.type?.toLowerCase() === "admin";
 
   React.useEffect(() => {
     if (!user) return;
@@ -119,9 +137,78 @@ export function ViewUsers() {
   const secretariesFiltered = filteredUsers.filter(
     (u) => u.type?.toLowerCase() === "secretary",
   );
-  if (loading) return <div>Loading...</div>;
 
-  console.log(userIsSecretary, "CHECK SECRETARY STATUS");
+  // Delete user function
+  const handleDeleteUser = async () => {
+    if (!userToDelete || !isAdmin) return;
+
+    setIsDeleting(true);
+    try {
+      const userRef = ref(db, `users/${userToDelete.id}`);
+
+      // Remove user from all references (doctors' secretaries lists, secretaries' doctors lists, etc.)
+      const updates: Record<string, any> = {};
+
+      // Remove from doctors' secretaries lists if this user is a secretary
+      if (userToDelete.type?.toLowerCase() === "secretary") {
+        for (const doctor of doctors) {
+          if (doctor.secretaries?.includes(userToDelete.id)) {
+            const newSecretaries = doctor.secretaries.filter(
+              (id) => id !== userToDelete.id,
+            );
+            updates[`users/${doctor.id}/secretaries`] = newSecretaries;
+          }
+        }
+      }
+
+      // Remove from secretaries' doctors lists if this user is a doctor
+      if (userToDelete.type?.toLowerCase() === "doctor") {
+        for (const secretary of secretaries) {
+          if (secretary.doctors?.includes(userToDelete.id)) {
+            const newDoctors = secretary.doctors.filter(
+              (id) => id !== userToDelete.id,
+            );
+            updates[`users/${secretary.id}/doctors`] = newDoctors;
+          }
+        }
+      }
+
+      // Remove from requestedBy and requestedTo lists
+      for (const otherUser of data) {
+        if (otherUser.requestedBy?.includes(userToDelete.id)) {
+          const newRequestedBy = otherUser.requestedBy.filter(
+            (id) => id !== userToDelete.id,
+          );
+          updates[`users/${otherUser.id}/requestedBy`] = newRequestedBy;
+        }
+        if (otherUser.requestedTo?.includes(userToDelete.id)) {
+          const newRequestedTo = otherUser.requestedTo.filter(
+            (id) => id !== userToDelete.id,
+          );
+          updates[`users/${otherUser.id}/requestedTo`] = newRequestedTo;
+        }
+      }
+
+      // Apply all updates
+      if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
+      }
+
+      // Finally, delete the user
+      await remove(userRef);
+
+      console.log(
+        `User ${userToDelete.firstName} ${userToDelete.lastName} deleted successfully`,
+      );
+      setIsDeleteDialogOpen(false);
+      setUserToDelete(null);
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      alert("Failed to delete user. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   async function addRequest(u: User): Promise<void> {
     if (!user) return;
@@ -234,8 +321,63 @@ export function ViewUsers() {
     console.log(`Cancelled request from ${s.firstName} ${s.lastName}`);
   }
 
+  if (loading) return <div>Loading...</div>;
+
   return (
     <div className="p-6 space-y-10">
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Delete User
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {userToDelete?.firstName}{" "}
+              {userToDelete?.lastName}? This action cannot be undone and will
+              remove all associated data including:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-red-50 p-4 rounded-lg space-y-2">
+            <ul className="list-disc list-inside text-sm text-red-800 space-y-1">
+              <li>User profile and personal information</li>
+              <li>All schedules and appointments</li>
+              <li>Links with doctors/secretaries</li>
+              <li>Pending requests</li>
+            </ul>
+          </div>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+              className="!bg-red-300 text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+              className="flex items-center gap-2 !bg-green-700 !text-white"
+            >
+              {isDeleting ? (
+                <>
+                  <Spinner className="w-4 h-4" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Delete User
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="p-10 space-y-10 bg-gray-50 min-h-screen">
         {/* HEADER */}
         <div className="flex justify-between items-center">
@@ -244,10 +386,17 @@ export function ViewUsers() {
               View and Search for Doctors and Secretaries
             </h1>
             <p className="text-gray-500">
-              We’ve found {doctorsFiltered.length + secretariesFiltered.length}{" "}
+              We've found {doctorsFiltered.length + secretariesFiltered.length}{" "}
               Users Available
             </p>
           </div>
+          {isAdmin && (
+            <div className="bg-red-50 px-4 py-2 rounded-lg">
+              <p className="text-red-600 text-sm font-semibold">
+                Admin Mode: You can delete users
+              </p>
+            </div>
+          )}
         </div>
 
         {/* SEARCH BAR */}
@@ -308,8 +457,24 @@ export function ViewUsers() {
                       lg:grid-cols-[320px_1fr_220px]
                       gap-8
                       items-center
+                      relative
                     "
               >
+                {/* Delete button for admin */}
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-4 right-4 text-red-600 hover:text-red-700 hover:bg-red-50 !bg-white"
+                    onClick={() => {
+                      setUserToDelete(u);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+
                 {/* LEFT COLUMN */}
                 <div className="flex gap-4 items-center">
                   <Avatar className="w-24 h-24 shrink-0">
@@ -330,7 +495,6 @@ export function ViewUsers() {
                   </div>
                 </div>
 
-                {/* MIDDLE COLUMN */}
                 {/* MIDDLE COLUMN */}
                 <div className="flex items-center justify-center gap-4 h-full">
                   <div className="bg-blue-50 p-4 rounded-xl shrink-0">📱</div>
@@ -436,8 +600,23 @@ export function ViewUsers() {
             return (
               <div
                 key={s.id}
-                className="bg-white rounded-2xl shadow-md p-6 flex flex-col lg:flex-row justify-between gap-6 border"
+                className="bg-white rounded-2xl shadow-md p-6 flex flex-col lg:flex-row justify-between gap-6 border relative"
               >
+                {/* Delete button for admin */}
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-4 right-4 text-red-600 hover:text-red-700 hover:bg-red-50 !bg-white"
+                    onClick={() => {
+                      setUserToDelete(s);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+
                 {/* LEFT */}
                 <div className="flex gap-4 min-w-[280px]">
                   <Avatar className="w-20 h-20">

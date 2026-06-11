@@ -111,7 +111,7 @@ export function Login() {
             <div className="flex items-center justify-center w-full">
               <Button
                 type="submit"
-                className="!bg-blue-400 !text-white border border-none rounded-none  "
+                className="!bg-[#00a896] !text-white border border-none rounded-none  "
               >
                 Login
               </Button>

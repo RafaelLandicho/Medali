@@ -5,7 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Card } from "./ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "./ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  Heart,
+  Wind,
+  Thermometer,
+  Droplets,
+  Ruler,
+  Weight,
+  Activity,
+  User,
+  MapPin,
+  Phone,
+  ClipboardList,
+  Users,
+  Stethoscope,
+} from "lucide-react";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import {
   Select,
@@ -57,6 +72,31 @@ function formatDate(date: Date | undefined) {
 function isValidDate(date: Date | undefined) {
   if (!date) return false;
   return !isNaN(date.getTime());
+}
+
+// ── Shared section header matching AddRecords style ──────────────────────────
+function SectionHeader({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 border-l-4 border-[#00c4b4] pl-4">
+      <div className="w-8 h-8 rounded-lg bg-[#00c4b4]/10 flex items-center justify-center flex-shrink-0">
+        {icon}
+      </div>
+      <div>
+        <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+          {title}
+        </h2>
+        {description && <p className="text-sm text-gray-500">{description}</p>}
+      </div>
+    </div>
+  );
 }
 
 export function EditRecordsSheet({
@@ -155,15 +195,11 @@ export function EditRecordsSheet({
       toast.error("Invalid patient record.");
       return;
     }
-
     const patientRef = ref(db, `patients/${fields.id}`);
     const patientHistoryRef = ref(db, `patients/${fields.id}/medicalHistory`);
-
     const snapshot = await get(patientRef);
     const currentPatient = snapshot.val();
-
     const { medicalHistory, ...oldHistory } = currentPatient || {};
-
     await update(patientRef, {
       ...fields,
       address:
@@ -175,190 +211,283 @@ export function EditRecordsSheet({
       ...oldHistory,
       savedAt: Date.now(),
     });
-
     toast.success("Patient record updated successfully.");
     onOpenChange(false);
   };
 
-  // Mobile-optimized Diagnosis component
+  // ── Diagnosis section ──────────────────────────────────────────────────────
   const DiagnosisSection = () => (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg md:text-xl font-semibold">Diagnosis</h2>
+      <div className="flex items-center justify-between">
+        <SectionHeader
+          icon={<ClipboardList className="w-4 h-4 text-[#00a896]" />}
+          title="Diagnosis"
+        />
         <Button
-          size={isMobile ? "default" : "sm"}
-          className="!bg-[#00a896] text-white"
+          type="button"
+          size="sm"
+          className="!bg-[#00a896] text-white hover:bg-[#028090]"
           onClick={handleAddDiagnosis}
         >
           + Add
         </Button>
       </div>
 
-      {fields.patientDiagnosis.map((d, index) => (
-        <div
-          key={index}
-          className={`p-4 border rounded-xl bg-gray-50 ${
-            isMobile ? "space-y-3" : "grid grid-cols-4 gap-3"
-          }`}
-        >
-          <div className={isMobile ? "space-y-1" : ""}>
-            <label className="text-sm font-medium text-gray-700 block md:hidden">
-              Diagnosis
-            </label>
-            <Input
-              value={d.diagnosis}
-              onChange={(e) =>
-                handleDiagnosisChange(index, "diagnosis", e.target.value)
-              }
-              placeholder="Diagnosis"
-              className="w-full"
-            />
-          </div>
-
-          <div className={isMobile ? "space-y-1" : ""}>
-            <label className="text-sm font-medium text-gray-700 block md:hidden">
-              Severity
-            </label>
-            <Input
-              value={d.severity}
-              onChange={(e) =>
-                handleDiagnosisChange(index, "severity", e.target.value)
-              }
-              placeholder="Severity"
-              className="w-full"
-            />
-          </div>
-
-          <div className={isMobile ? "space-y-1" : ""}>
-            <label className="text-sm font-medium text-gray-700 block md:hidden">
-              Notes
-            </label>
-            <Input
-              value={d.notes}
-              onChange={(e) =>
-                handleDiagnosisChange(index, "notes", e.target.value)
-              }
-              placeholder="Notes"
-              className="w-full"
-            />
-          </div>
-
-          {fields.patientDiagnosis.length > 1 && (
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => handleRemoveDiagnosis(index)}
-              className="w-full md:w-auto"
-            >
-              Remove
-            </Button>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-
-  // Mobile-optimized Family History component
-  const FamilyHistorySection = () => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg md:text-xl font-semibold">Family History</h2>
-        <Button
-          size={isMobile ? "default" : "sm"}
-          className="!bg-[#00a896] text-white"
-          onClick={handleAddHistory}
-        >
-          + Add
-        </Button>
-      </div>
-
-      <div className="divide-y border rounded-xl">
-        {fields.familyHistory.map((h, index) => (
-          <div key={index} className="p-4 space-y-3">
-            {/* Relation */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">
-                Relation
-              </label>
-              <Input
-                value={h.relation}
-                onChange={(e) =>
-                  handleHistoryChange(index, "relation", e.target.value)
-                }
-                placeholder="e.g., Mother, Father"
-              />
-            </div>
-
-            {/* Age */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Age</label>
-              <Input
-                value={h.age}
-                onChange={(e) =>
-                  handleHistoryChange(index, "age", e.target.value)
-                }
-                placeholder="Age"
-                type="number"
-              />
-            </div>
-
-            {/* Health Problems */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">
-                Health Problems
-              </label>
-              <Input
-                value={h.healthProblems}
-                onChange={(e) =>
-                  handleHistoryChange(index, "healthProblems", e.target.value)
-                }
-                placeholder="Any health conditions"
-              />
-            </div>
-
-            {/* Checkboxes */}
-            <div className="flex flex-col gap-3 pt-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
-                  Good Health
+      <div className="space-y-3">
+        {fields.patientDiagnosis.map((d, index) => (
+          <div
+            key={index}
+            className={`p-4 border border-gray-200 rounded-xl bg-gray-50 ${
+              isMobile ? "space-y-3" : "grid grid-cols-4 gap-3"
+            }`}
+          >
+            <div className={isMobile ? "space-y-1" : ""}>
+              {isMobile && (
+                <label className="text-sm font-medium text-gray-700 block">
+                  Diagnosis
                 </label>
-                <Checkbox
-                  className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                  checked={h.goodHealth}
-                  onCheckedChange={(c) =>
-                    handleHistoryChange(index, "goodHealth", c === true)
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
-                  Alive
-                </label>
-                <Checkbox
-                  className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
-                  checked={h.isAlive}
-                  onCheckedChange={(c) =>
-                    handleHistoryChange(index, "isAlive", c === true)
-                  }
-                />
-              </div>
+              )}
+              <Input
+                value={d.diagnosis}
+                onChange={(e) =>
+                  handleDiagnosisChange(index, "diagnosis", e.target.value)
+                }
+                placeholder="Diagnosis"
+                className="w-full"
+              />
             </div>
-
-            {/* Remove Button */}
-            {fields.familyHistory.length > 1 && (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => handleRemoveHistory(index)}
-                className="w-full mt-2"
-              >
-                Remove
-              </Button>
+            <div className={isMobile ? "space-y-1" : ""}>
+              {isMobile && (
+                <label className="text-sm font-medium text-gray-700 block">
+                  Severity
+                </label>
+              )}
+              <Input
+                value={d.severity}
+                onChange={(e) =>
+                  handleDiagnosisChange(index, "severity", e.target.value)
+                }
+                placeholder="Severity"
+                className="w-full"
+              />
+            </div>
+            <div className={isMobile ? "space-y-1" : ""}>
+              {isMobile && (
+                <label className="text-sm font-medium text-gray-700 block">
+                  Notes
+                </label>
+              )}
+              <Input
+                value={d.notes}
+                onChange={(e) =>
+                  handleDiagnosisChange(index, "notes", e.target.value)
+                }
+                placeholder="Notes"
+                className="w-full"
+              />
+            </div>
+            {fields.patientDiagnosis.length > 1 && (
+              <div className="flex items-center">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  className="!bg-red-400 text-white w-full md:w-auto"
+                  onClick={() => handleRemoveDiagnosis(index)}
+                >
+                  Remove
+                </Button>
+              </div>
             )}
           </div>
         ))}
       </div>
+    </div>
+  );
+
+  // ── Family History section ─────────────────────────────────────────────────
+  const FamilyHistorySection = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <SectionHeader
+          icon={<Users className="w-4 h-4 text-[#00a896]" />}
+          title="Family History"
+          description="Provide age and indicate relevant conditions"
+        />
+        {isMobile && (
+          <Button
+            type="button"
+            size="sm"
+            className="!bg-[#00a896] text-white hover:bg-[#028090]"
+            onClick={handleAddHistory}
+          >
+            + Add
+          </Button>
+        )}
+      </div>
+
+      {isMobile ? (
+        <div className="space-y-4">
+          {fields.familyHistory.map((h, index) => (
+            <Card key={index} className="p-4 space-y-4 border border-gray-200">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">
+                  Relation
+                </label>
+                <Input
+                  value={h.relation}
+                  onChange={(e) =>
+                    handleHistoryChange(index, "relation", e.target.value)
+                  }
+                  placeholder="e.g., Mother, Father"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Age</label>
+                <Input
+                  value={h.age}
+                  onChange={(e) =>
+                    handleHistoryChange(index, "age", e.target.value)
+                  }
+                  placeholder="Age"
+                  type="number"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">
+                  Health Problems
+                </label>
+                <Input
+                  value={h.healthProblems}
+                  onChange={(e) =>
+                    handleHistoryChange(index, "healthProblems", e.target.value)
+                  }
+                  placeholder="Any health conditions"
+                />
+              </div>
+              <div className="flex flex-col gap-3 pt-2">
+                <div className="flex items-center justify-between hover:bg-gray-50 rounded-lg p-2 transition-colors">
+                  <label className="text-sm font-medium text-gray-700">
+                    In Good Health
+                  </label>
+                  <Checkbox
+                    className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
+                    checked={h.goodHealth}
+                    onCheckedChange={(c) =>
+                      handleHistoryChange(index, "goodHealth", c === true)
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between hover:bg-gray-50 rounded-lg p-2 transition-colors">
+                  <label className="text-sm font-medium text-gray-700">
+                    Alive
+                  </label>
+                  <Checkbox
+                    className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
+                    checked={h.isAlive}
+                    onCheckedChange={(c) =>
+                      handleHistoryChange(index, "isAlive", c === true)
+                    }
+                  />
+                </div>
+              </div>
+              {fields.familyHistory.length > 1 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  className="!bg-red-400 text-white w-full mt-2"
+                  onClick={() => handleRemoveHistory(index)}
+                >
+                  Remove
+                </Button>
+              )}
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-[140px_80px_1fr_120px_80px_100px] px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 rounded-lg">
+            <span>Relation</span>
+            <span>Age</span>
+            <span>Health Problems</span>
+            <span className="text-center">Good Health</span>
+            <span className="text-center">Alive</span>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                className="!bg-[#00a896] text-white hover:bg-[#028090] h-7 text-xs"
+                onClick={handleAddHistory}
+              >
+                + Add
+              </Button>
+            </div>
+          </div>
+
+          <div className="divide-y border border-gray-200 rounded-xl overflow-hidden">
+            {fields.familyHistory.map((h, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-[140px_80px_1fr_120px_80px_100px] items-center gap-3 p-3 hover:bg-gray-50 transition-colors"
+              >
+                <Input
+                  placeholder="e.g. Father"
+                  value={h.relation}
+                  onChange={(e) =>
+                    handleHistoryChange(index, "relation", e.target.value)
+                  }
+                />
+                <Input
+                  placeholder="Age"
+                  value={h.age}
+                  onChange={(e) =>
+                    handleHistoryChange(index, "age", e.target.value)
+                  }
+                />
+                <Input
+                  placeholder="Health Problems"
+                  value={h.healthProblems}
+                  onChange={(e) =>
+                    handleHistoryChange(index, "healthProblems", e.target.value)
+                  }
+                />
+                <div className="flex justify-center">
+                  <Checkbox
+                    checked={h.goodHealth}
+                    className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
+                    onCheckedChange={(c) =>
+                      handleHistoryChange(index, "goodHealth", c === true)
+                    }
+                  />
+                </div>
+                <div className="flex justify-center">
+                  <Checkbox
+                    checked={h.isAlive}
+                    className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
+                    onCheckedChange={(c) =>
+                      handleHistoryChange(index, "isAlive", c === true)
+                    }
+                  />
+                </div>
+                <div className="flex justify-end">
+                  {fields.familyHistory.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="!bg-red-400 text-white h-8 text-xs"
+                      onClick={() => handleRemoveHistory(index)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 
@@ -395,296 +524,345 @@ export function EditRecordsSheet({
           `
         }
       >
-        <SheetHeader className="sticky top-0 bg-white z-10 border-b">
-          <SheetTitle className="text-xl md:text-3xl font-semibold text-center text-orange-500 py-4">
-            Edit Medical Report
-          </SheetTitle>
-          <SheetDescription className="text-center text-gray-500 pb-4">
-            Update patient information, vitals, and medical history.
-          </SheetDescription>
+        {/* ── SHEET HEADER ── */}
+        <SheetHeader className="sticky top-0 z-10 border-b bg-white">
+          <div className="text-center pt-6 pb-4 px-4">
+            <h1 className="text-xl md:text-2xl font-bold text-[#00a896] tracking-tight uppercase">
+              Edit Medical Report
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Update patient information, vitals, and medical history
+            </p>
+            <div className="mt-3 h-1 w-16 bg-[#00c4b4] rounded-full mx-auto" />
+          </div>
         </SheetHeader>
 
         <Card className="flex-1 border-none rounded-none">
           <div className="px-4 md:px-8 lg:px-12 py-4">
-            <Card className="p-4 md:p-8 rounded-2xl border-none">
-              <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
-                {/* Patient Information */}
+            <Card className="p-4 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
+              <div className="max-w-5xl mx-auto space-y-10">
+                {/* ── PATIENT INFORMATION ── */}
                 <div className="space-y-4">
-                  <h2 className="text-lg md:text-xl font-semibold">
-                    Patient Information
-                  </h2>
+                  <SectionHeader
+                    icon={<User className="w-4 h-4 text-[#00a896]" />}
+                    title="Patient Information"
+                    description="Basic demographic details"
+                  />
 
-                  <div className="grid grid-cols-1 gap-4">
-                    {/* Name fields - stack on mobile, grid on desktop */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Field>
-                        <Input
-                          value={fields.firstName}
-                          onChange={(e) =>
-                            handleChange("firstName", e.target.value)
-                          }
-                          placeholder="Enter first name"
-                        />
-                        <FieldDescription>First Name</FieldDescription>
-                      </Field>
-
-                      <Field>
-                        <Input
-                          value={fields.lastName}
-                          onChange={(e) =>
-                            handleChange("lastName", e.target.value)
-                          }
-                          placeholder="Enter last name"
-                        />
-                        <FieldDescription>Last Name</FieldDescription>
-                      </Field>
-                    </div>
-
-                    {/* Date of Birth */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Field>
-                      <InputGroup>
-                        <InputGroupInput
-                          id="date-required"
-                          value={value}
-                          placeholder={fields.birthdate}
-                          onChange={(e) => {
-                            handleChange("birthdate", e.target.value);
-                            const date = new Date(e.target.value);
-                            setValue(e.target.value);
-                            if (isValidDate(date)) {
-                              setDate(date);
-                              setMonth(date);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowDown") {
-                              e.preventDefault();
-                              setOpenDate(true);
-                            }
-                          }}
-                        />
-                        <InputGroupAddon align="inline-end">
-                          <Popover open={openD} onOpenChange={setOpenDate}>
-                            <PopoverTrigger asChild>
-                              <InputGroupButton
-                                id="date-picker"
-                                variant="ghost"
-                                size="icon-xs"
-                                aria-label="Select date"
-                                className="!bg-[#00a896] text-white !hover:bg-[#028090] border-none"
-                              >
-                                <CalendarIcon />
-                                <span className="sr-only">Select date</span>
-                              </InputGroupButton>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto overflow-hidden p-0"
-                              align="end"
-                              alignOffset={-8}
-                              sideOffset={10}
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={date}
-                                month={month}
-                                onMonthChange={setMonth}
-                                onSelect={(date) => {
-                                  setDate(date);
-                                  setValue(formatDate(date));
-                                  setOpenDate(false);
-                                }}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </InputGroupAddon>
-                      </InputGroup>
-                      <FieldDescription>Date of Birth</FieldDescription>
+                      <Input
+                        value={fields.firstName}
+                        onChange={(e) =>
+                          handleChange("firstName", e.target.value)
+                        }
+                        placeholder="Enter first name"
+                      />
+                      <FieldDescription>First Name</FieldDescription>
                     </Field>
+                    <Field>
+                      <Input
+                        value={fields.lastName}
+                        onChange={(e) =>
+                          handleChange("lastName", e.target.value)
+                        }
+                        placeholder="Enter last name"
+                      />
+                      <FieldDescription>Last Name</FieldDescription>
+                    </Field>
+                  </div>
 
-                    {/* Age and Gender - side by side on mobile */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <Field>
-                        <Input
-                          value={fields.age}
-                          onChange={(e) => handleChange("age", e.target.value)}
-                          placeholder="Enter age"
-                          type="number"
-                        />
-                        <FieldDescription>Age</FieldDescription>
-                      </Field>
-
-                      <Field>
-                        <Select
-                          value={fields.gender}
-                          onValueChange={(value) =>
-                            handleChange("gender", value)
+                  <Field>
+                    <InputGroup>
+                      <InputGroupInput
+                        id="date-required"
+                        value={value}
+                        placeholder={fields.birthdate}
+                        onChange={(e) => {
+                          handleChange("birthdate", e.target.value);
+                          const d = new Date(e.target.value);
+                          setValue(e.target.value);
+                          if (isValidDate(d)) {
+                            setDate(d);
+                            setMonth(d);
                           }
-                        >
-                          <SelectTrigger className="!bg-[#00a896] w-full border-gray-300 !text-white">
-                            <SelectValue placeholder="Select Gender" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MALE">Male</SelectItem>
-                            <SelectItem value="FEMALE">Female</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FieldDescription>Gender</FieldDescription>
-                      </Field>
-                    </div>
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowDown") {
+                            e.preventDefault();
+                            setOpenDate(true);
+                          }
+                        }}
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <Popover open={openD} onOpenChange={setOpenDate}>
+                          <PopoverTrigger asChild>
+                            <InputGroupButton
+                              id="date-picker"
+                              variant="ghost"
+                              size="icon-xs"
+                              aria-label="Select date"
+                              className="!bg-[#00a896] text-white !hover:bg-[#028090] border-none"
+                            >
+                              <CalendarIcon />
+                              <span className="sr-only">Select date</span>
+                            </InputGroupButton>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto overflow-hidden p-0"
+                            align="end"
+                            alignOffset={-8}
+                            sideOffset={10}
+                          >
+                            <Calendar
+                              mode="single"
+                              selected={date}
+                              month={month}
+                              onMonthChange={setMonth}
+                              onSelect={(d) => {
+                                setDate(d);
+                                setValue(formatDate(d));
+                                setOpenDate(false);
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </InputGroupAddon>
+                    </InputGroup>
+                    <FieldDescription>Date of Birth</FieldDescription>
+                  </Field>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field>
+                      <Input
+                        value={fields.age}
+                        onChange={(e) => handleChange("age", e.target.value)}
+                        placeholder="Enter age"
+                        type="number"
+                      />
+                      <FieldDescription>Age</FieldDescription>
+                    </Field>
+                    <Field>
+                      <Select
+                        value={fields.gender}
+                        onValueChange={(v) => handleChange("gender", v)}
+                      >
+                        <SelectTrigger className="!bg-[#00a896] w-full border-gray-300 !text-white">
+                          <SelectValue placeholder="Select Gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem
+                            className="!bg-white !text-blue-500"
+                            value="MALE"
+                          >
+                            Male
+                          </SelectItem>
+                          <SelectItem
+                            className="!bg-white !text-red-500"
+                            value="FEMALE"
+                          >
+                            Female
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>Gender</FieldDescription>
+                    </Field>
                   </div>
                 </div>
 
-                {/* Contact Number */}
+                {/* ── ADDRESS ── */}
                 <div className="space-y-4">
-                  <h2 className="text-lg md:text-xl font-semibold">
-                    Contact Number
-                  </h2>
-                  <Field>
-                    <Input
-                      value={fields.telephone}
-                      onChange={(e) =>
-                        handleChange("telephone", e.target.value)
-                      }
-                      placeholder="Enter contact number"
-                      type="tel"
-                    />
-                  </Field>
-                </div>
-
-                {/* Address */}
-                <div className="space-y-4">
-                  <h2 className="text-lg md:text-xl font-semibold">Address</h2>
-
+                  <SectionHeader
+                    icon={<MapPin className="w-4 h-4 text-[#00a896]" />}
+                    title="Address"
+                  />
                   <Field>
                     <Input
                       value={fields.address1}
                       onChange={(e) => handleChange("address1", e.target.value)}
-                      placeholder="Enter address"
+                      placeholder="Street address, building, unit..."
                     />
                     <FieldDescription>Address Line 1</FieldDescription>
                   </Field>
-
                   <Field>
                     <Input
                       value={fields.address2}
                       onChange={(e) => handleChange("address2", e.target.value)}
-                      placeholder="Enter address"
+                      placeholder="Apartment, suite, etc. (optional)"
                     />
                     <FieldDescription>Address Line 2</FieldDescription>
                   </Field>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field>
                       <Input
                         value={fields.city}
                         onChange={(e) => handleChange("city", e.target.value)}
-                        placeholder="Enter city"
+                        placeholder="City"
                       />
                       <FieldDescription>City</FieldDescription>
                     </Field>
-
                     <Field>
                       <Input
                         value={fields.province}
                         onChange={(e) =>
                           handleChange("province", e.target.value)
                         }
-                        placeholder="Enter state/province"
+                        placeholder="State or Province"
                       />
-                      <FieldDescription>State/Province</FieldDescription>
+                      <FieldDescription>State / Province</FieldDescription>
                     </Field>
                   </div>
                 </div>
 
-                {/* Vital Statistics - 2 columns on mobile, 3 on desktop */}
+                {/* ── CONTACT NUMBER ── */}
                 <div className="space-y-4">
-                  <h2 className="text-lg md:text-xl font-semibold">
-                    Vital Statistics
-                  </h2>
+                  <SectionHeader
+                    icon={<Phone className="w-4 h-4 text-[#00a896]" />}
+                    title="Contact Number"
+                  />
+                  <Field>
+                    <Input
+                      value={fields.telephone}
+                      onChange={(e) =>
+                        handleChange("telephone", e.target.value)
+                      }
+                      placeholder="+63 912 345 6789"
+                      type="tel"
+                    />
+                  </Field>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {/* ── VITAL STATISTICS ── */}
+                <div className="space-y-4">
+                  <SectionHeader
+                    icon={<Activity className="w-4 h-4 text-[#00a896]" />}
+                    title="Vital Statistics"
+                    description="Leave blank if not measured"
+                  />
+
+                  <div
+                    className={`${isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-4 gap-4"}`}
+                  >
                     <Field>
-                      <Input
-                        value={fields.bloodPressure}
-                        onChange={(e) =>
-                          handleChange("bloodPressure", e.target.value)
-                        }
-                        placeholder="Blood Pressure"
-                      />
-                      <FieldDescription>Blood Pressure</FieldDescription>
+                      <div className="relative">
+                        <Activity className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                        <Input
+                          value={fields.bloodPressure}
+                          onChange={(e) =>
+                            handleChange("bloodPressure", e.target.value)
+                          }
+                          placeholder="120/80"
+                          className="pl-9"
+                        />
+                      </div>
+                      <FieldDescription>Blood Pressure (mmHg)</FieldDescription>
                     </Field>
 
                     <Field>
-                      <Input
-                        value={fields.heartRate}
-                        onChange={(e) =>
-                          handleChange("heartRate", e.target.value)
-                        }
-                        placeholder="Heart Rate"
-                      />
-                      <FieldDescription>Heart Rate</FieldDescription>
+                      <div className="relative">
+                        <Heart className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                        <Input
+                          value={fields.heartRate}
+                          onChange={(e) =>
+                            handleChange("heartRate", e.target.value)
+                          }
+                          placeholder="72"
+                          className="pl-9"
+                        />
+                      </div>
+                      <FieldDescription>Heart Rate (BPM)</FieldDescription>
                     </Field>
 
                     <Field>
-                      <Input
-                        value={fields.temperature}
-                        onChange={(e) =>
-                          handleChange("temperature", e.target.value)
-                        }
-                        placeholder="Temperature"
-                      />
-                      <FieldDescription>Temperature</FieldDescription>
-                    </Field>
-
-                    <Field>
-                      <Input
-                        value={fields.oxygenSaturation}
-                        onChange={(e) =>
-                          handleChange("oxygenSaturation", e.target.value)
-                        }
-                        placeholder="Oxygen Saturation"
-                      />
-                      <FieldDescription>Oxygen Saturation</FieldDescription>
-                    </Field>
-
-                    <Field>
-                      <Input
-                        value={fields.respiratoryRate}
-                        onChange={(e) =>
-                          handleChange("respiratoryRate", e.target.value)
-                        }
-                        placeholder="Respiratory Rate"
-                      />
+                      <div className="relative">
+                        <Wind className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                        <Input
+                          value={fields.respiratoryRate}
+                          onChange={(e) =>
+                            handleChange("respiratoryRate", e.target.value)
+                          }
+                          placeholder="16"
+                          className="pl-9"
+                        />
+                      </div>
                       <FieldDescription>Respiratory Rate</FieldDescription>
                     </Field>
 
                     <Field>
-                      <Input
-                        value={fields.height}
-                        onChange={(e) => handleChange("height", e.target.value)}
-                        placeholder="Height"
-                      />
-                      <FieldDescription>Height</FieldDescription>
+                      <div className="relative">
+                        <Droplets className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                        <Input
+                          value={fields.oxygenSaturation}
+                          onChange={(e) =>
+                            handleChange("oxygenSaturation", e.target.value)
+                          }
+                          placeholder="98"
+                          className="pl-9"
+                        />
+                      </div>
+                      <FieldDescription>Oxygen Saturation (%)</FieldDescription>
+                    </Field>
+                  </div>
+
+                  <div
+                    className={`${isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-3 gap-4"}`}
+                  >
+                    <Field>
+                      <div className="relative">
+                        <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                        <Input
+                          value={fields.height}
+                          onChange={(e) =>
+                            handleChange("height", e.target.value)
+                          }
+                          placeholder="170"
+                          className="pl-9"
+                        />
+                      </div>
+                      <FieldDescription>Height (cm)</FieldDescription>
                     </Field>
 
                     <Field>
-                      <Input
-                        value={fields.weight}
-                        onChange={(e) => handleChange("weight", e.target.value)}
-                        placeholder="Weight"
-                      />
-                      <FieldDescription>Weight</FieldDescription>
+                      <div className="relative">
+                        <Weight className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                        <Input
+                          value={fields.weight}
+                          onChange={(e) =>
+                            handleChange("weight", e.target.value)
+                          }
+                          placeholder="62"
+                          className="pl-9"
+                        />
+                      </div>
+                      <FieldDescription>Weight (kg)</FieldDescription>
+                    </Field>
+
+                    <Field>
+                      <div className="relative">
+                        <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00a896]" />
+                        <Input
+                          value={fields.temperature}
+                          onChange={(e) =>
+                            handleChange("temperature", e.target.value)
+                          }
+                          placeholder="36.5"
+                          className="pl-9"
+                        />
+                      </div>
+                      <FieldDescription>Temperature (°C)</FieldDescription>
                     </Field>
                   </div>
                 </div>
 
-                {/* Health History - improved touch targets */}
+                {/* ── HEALTH HISTORY ── */}
                 <div className="space-y-4">
-                  <h2 className="text-lg md:text-xl font-semibold">
-                    Health History
-                  </h2>
+                  <SectionHeader
+                    icon={<ClipboardList className="w-4 h-4 text-[#00a896]" />}
+                    title="Health History"
+                    description="Please check if any of the following apply"
+                  />
 
-                  <div className="divide-y rounded-xl border overflow-hidden">
+                  <div className="divide-y rounded-xl border border-gray-200 overflow-hidden">
                     {[
                       {
                         label: "Are you presently under medical care?",
@@ -722,13 +900,11 @@ export function EditRecordsSheet({
                     ].map((item) => (
                       <div
                         key={item.key}
-                        className="flex items-center justify-between px-4 py-4 min-h-[56px]"
+                        className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
                       >
-                        <label className="text-sm font-medium text-gray-700 flex-1 mr-4">
-                          {item.label}
-                        </label>
+                        <FieldLabel>{item.label}</FieldLabel>
                         <Checkbox
-                          className="size-6 border-gray-300 data-[state=unchecked]:!bg-gray-300 data-[state=checked]:!bg-[#00a896]"
+                          className="size-5 border-gray-300 data-[state=unchecked]:!bg-gray-200 data-[state=checked]:!bg-[#00a896]"
                           checked={item.checked as boolean}
                           onCheckedChange={(checked) =>
                             handleChange(item.key as keyof Patient, checked)
@@ -739,27 +915,35 @@ export function EditRecordsSheet({
                   </div>
                 </div>
 
-                {/* Symptoms */}
-                <div className="space-y-3">
-                  <h2 className="text-lg md:text-xl font-semibold">Symptoms</h2>
-                  <Input
-                    value={fields.symptoms}
-                    onChange={(e) => handleChange("symptoms", e.target.value)}
-                    placeholder="e.g., fever, cough"
+                {/* ── SYMPTOMS ── */}
+                <div className="space-y-4">
+                  <SectionHeader
+                    icon={<Stethoscope className="w-4 h-4 text-[#00a896]" />}
+                    title="Symptoms"
                   />
+                  <Field>
+                    <Input
+                      value={fields.symptoms}
+                      onChange={(e) => handleChange("symptoms", e.target.value)}
+                      placeholder="e.g. fever, cough, headache"
+                    />
+                    <FieldDescription>
+                      Describe current symptoms
+                    </FieldDescription>
+                  </Field>
                 </div>
 
-                {/* Diagnosis Section */}
+                {/* ── DIAGNOSIS ── */}
                 <DiagnosisSection />
 
-                {/* Family History Section */}
+                {/* ── FAMILY HISTORY ── */}
                 <FamilyHistorySection />
 
-                {/* Save Button */}
+                {/* ── SAVE BUTTON ── */}
                 <div className="flex justify-center pt-6 sticky bottom-0 bg-white pb-4">
                   <Button
                     onClick={updateRecords}
-                    className="!bg-orange-400 text-white w-full md:w-auto px-8 py-6 md:py-2 text-base md:text-sm"
+                    className="!bg-[#00a896] hover:!bg-[#028090] !text-white !px-12 !py-6 !text-lg font-semibold rounded-xl transition-all shadow-md w-full md:w-auto"
                     size={isMobile ? "lg" : "default"}
                   >
                     Update Record

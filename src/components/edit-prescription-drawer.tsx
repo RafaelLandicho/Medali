@@ -1,5 +1,4 @@
 "use client";
-
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Drawer,
@@ -15,11 +15,10 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
+  DrawerDescription,
 } from "@/components/ui/drawer";
-
 import type { Prescription } from "./view-prescriptions";
 import { EditPrescription } from "./edit-prescription";
-import { DialogDescription } from "@radix-ui/react-dialog";
 
 type PrescriptionDrawerProps = {
   open: boolean;
@@ -37,22 +36,26 @@ export function PrescriptionDrawer({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent>
-          <DrawerHeader>
+        {/* h-[92vh] caps the drawer height; flex+overflow lets the inner form scroll */}
+        <DrawerContent className="h-[92vh] flex flex-col">
+          <DrawerHeader className="flex-shrink-0">
             <DrawerTitle>Edit Prescription</DrawerTitle>
-            <DialogDescription>
-              Edit you&apos;re patient prescription. Click save when you&apos;re
+            <DrawerDescription>
+              Edit your patient&apos;s prescription. Click save when you&apos;re
               done.
-            </DialogDescription>
+            </DrawerDescription>
           </DrawerHeader>
-          <div className="p-4">
+
+          {/* This div grows to fill remaining height and scrolls */}
+          <div className="flex-1 overflow-y-auto px-4 pb-2">
             <EditPrescription
               open={open}
               onOpenChange={onOpenChange}
               prescription={prescription}
             />
           </div>
-          <DrawerFooter>
+
+          <DrawerFooter className="flex-shrink-0">
             <DrawerClose asChild>
               <Button variant="outline">Close</Button>
             </DrawerClose>
@@ -64,14 +67,15 @@ export function PrescriptionDrawer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[800px] w-[90vw]">
+      {/* max-w-4xl for a comfortable wide layout; max-h+overflow for scroll */}
+      <DialogContent className="max-w-4xl w-[90vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Prescription</DialogTitle>
+          <DialogDescription>
+            Edit your patient&apos;s prescription. Click save when you&apos;re
+            done.
+          </DialogDescription>
         </DialogHeader>
-        <DialogDescription>
-          Edit you&apos;re patient prescription. Click save when you&apos;re
-          done.
-        </DialogDescription>
         <EditPrescription
           open={open}
           onOpenChange={onOpenChange}

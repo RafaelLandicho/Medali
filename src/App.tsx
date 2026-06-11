@@ -27,6 +27,7 @@ import { AddRecords } from "./components/add-records";
 import { Spinner } from "@/components/ui/spinner";
 import { PendingRecords } from "./components/view-pending";
 import { EditProfile } from "./components/edit-profile";
+import { Activity } from "lucide-react";
 
 function NavigateToMyProfile() {
   const { user } = useAuth();
@@ -69,125 +70,118 @@ function App() {
             path="/"
             element={
               !user ? (
-                <div className="min-h-screen relative flex justify-center items-center overflow-y-auto bg-gradient-to-br from-blue-100 via-blue-200 to-blue-400 p-4">
-                  <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-300/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
-                  <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
-                  <div className="flex flex-col lg:flex-row w-full min-h-screen">
-                    {/* <div className="flex flex-col items-center text-center mb-8">
-                      <h1 className="text-4xl font-bold text-green-500 tracking-tight drop-shadow-sm">
-                        Welcome to Medali
+                <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+                  {/* ── Left panel: feature highlights ── */}
+                  <div className="hidden lg:flex flex-1 flex-col justify-center px-12 xl:px-20 bg-gradient-to-br from-[#00c4b4]/10 via-white to-[#00a896]/5">
+                    <div className="max-w-md">
+                      <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 rounded-xl !bg-[#00a896] flex items-center justify-center">
+                          <Activity className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-2xl font-bold text-gray-800">
+                          Medali
+                        </span>
+                      </div>
+                      <h1 className="text-4xl font-bold text-gray-800 leading-tight mb-4">
+                        Everything you need to manage patient care
                       </h1>
-                      <p className="text-gray-700 text-lg mt-2">
-                        Manage patient records online
+                      <p className="text-gray-500 text-lg mb-10">
+                        Secure, fast, and built for medical professionals.
                       </p>
-                    </div> */}
-                    <div className="flex flex-col lg:flex-row w-full">
-                      <div className="flex flex-1 items-center justify-center ">
-                        <Card className="h-full w-full border-none rounded-none  flex flex-col items-center justify-center text-center px-6">
-                          <p className="flex text-3xl font-bold justify-center items-center">
-                            Get access to everything MEDALI has to offer
-                          </p>
-                          <div className="flex flex-col gap-6 mt-6 max-w-md">
-                            <div className="flex items-start gap-4">
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage src={healthReport} />
-                              </Avatar>
-                              <p className="text-left">
-                                Access and manage all patient medical records
-                                securely
-                              </p>
-                            </div>
 
-                            <div className="flex items-start gap-4">
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage src={addUser} />
+                      <div className="space-y-5">
+                        {[
+                          {
+                            src: healthReport,
+                            text: "Access and manage all patient medical records securely",
+                          },
+                          {
+                            src: addUser,
+                            text: "Create and add patient records to the Medali database",
+                          },
+                          {
+                            src: networking,
+                            text: "Manage and link accounts with other users",
+                          },
+                          {
+                            src: prescriptionSmall,
+                            text: "Create and manage patient prescriptions",
+                          },
+                          {
+                            src: analysis,
+                            text: "View analytics of patient records and prescriptions",
+                          },
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-center gap-4">
+                            <div className="w-9 h-9 rounded-lg bg-[#00a896]/10 flex items-center justify-center flex-shrink-0">
+                              <Avatar className="w-6 h-6">
+                                <AvatarImage src={item.src} />
                               </Avatar>
-                              <p className="text-left">
-                                Create and add a patient's medical record to the
-                                Medali Database.
-                              </p>
                             </div>
-
-                            <div className="flex items-start gap-4">
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage src={networking} />
-                              </Avatar>
-                              <p className="text-left">
-                                Manage and link accounts with other users
-                              </p>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage src={prescriptionSmall} />
-                              </Avatar>
-                              <p className="text-left">
-                                Create and manage patient prescriptions in the
-                                system.
-                              </p>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage src={analysis} />
-                              </Avatar>
-                              <p className="text-left">
-                                View analytics of patient records and
-                                prescriptions
-                              </p>
-                            </div>
+                            <p className="text-gray-600 text-sm">{item.text}</p>
                           </div>
-                        </Card>
+                        ))}
                       </div>
-                      <div className="flex h-full w-full lg:w-1/2 ">
-                        <Card className="p-8  border border-none rounded-none w-full h-full overflow-y-auto">
-                          <Tabs defaultValue="login" className="w-full">
-                            <TabsList className="grid grid-cols-2 w-full mb-6 relative z-50">
-                              <TabsTrigger
-                                value="login"
-                                className="data-[state=active]:!bg-blue-500 
-                                                                    data-[state=active]:!text-white
-                                                                    !bg-blue-200 text-blue-900 transition-colors"
-                              >
-                                Login
-                              </TabsTrigger>
-                              <TabsTrigger
-                                value="signup"
-                                className="data-[state=active]:!bg-blue-500 data-[state=active]:text-white
-                                !bg-blue-200 text-blue-900 transition-colors"
-                              >
-                                Signup
-                              </TabsTrigger>
-                            </TabsList>
-                            <div>
-                              <TabsContent value="login">
-                                <CardTitle className="text-2xl font-semibold text-blue-900 flex justify-center items-center">
-                                  Login to your account
-                                </CardTitle>
-                                <CardDescription className="text-gray-600 mb-4 flex justify-center items-center">
-                                  Enter your email and password below to
-                                  continue.
-                                </CardDescription>
-                                <div className="flex items-center justify-center w-full">
-                                  <Login />
-                                </div>
-                              </TabsContent>
+                    </div>
+                  </div>
 
-                              <TabsContent value="signup">
-                                <CardTitle className="text-2xl font-semibold text-blue-900 flex justify-center items-center">
-                                  Create an account
-                                </CardTitle>
-                                <CardDescription className="text-gray-600 mb-4 flex justify-center items-center">
-                                  Fill out your details to get started.
-                                </CardDescription>
-                                <div className="flex items-center justify-center w-full">
-                                  <SignUp />
-                                </div>
-                              </TabsContent>
-                            </div>
-                          </Tabs>
-                        </Card>
+                  {/* ── Right panel: auth forms ── */}
+                  <div className="flex flex-1 flex-col justify-start lg:justify-center px-6 py-10 sm:px-10 lg:px-16 xl:px-20 overflow-y-auto">
+                    {/* Mobile logo */}
+                    <div className="flex lg:hidden items-center gap-2 mb-8">
+                      <div className="w-8 h-8 rounded-lg bg-[#00a896] flex items-center justify-center">
+                        <Activity className="w-4 h-4 text-white" />
                       </div>
+                      <span className="text-xl font-bold text-gray-800">
+                        Medali
+                      </span>
+                    </div>
+
+                    <div className="w-full max-w-md mx-auto">
+                      <Tabs defaultValue="login" className="w-full">
+                        <TabsList className="grid grid-cols-2 w-full mb-8 bg-gray-100 rounded-xl p-1">
+                          <TabsTrigger
+                            value="login"
+                            className="rounded-lg text-sm font-medium transition-all
+                data-[state=active]:!bg-[#00a896] data-[state=active]:!text-white
+                data-[state=inactive]:text-gray-500"
+                          >
+                            Login
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="signup"
+                            className="rounded-lg text-sm font-medium transition-all
+                data-[state=active]:!bg-[#00a896] data-[state=active]:!text-white
+                data-[state=inactive]:text-gray-500"
+                          >
+                            Sign Up
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="login">
+                          <div className="mb-6">
+                            <h2 className="text-2xl font-bold text-gray-800">
+                              Welcome back
+                            </h2>
+                            <p className="text-gray-400 text-sm mt-1">
+                              Enter your credentials to continue
+                            </p>
+                          </div>
+                          <Login />
+                        </TabsContent>
+
+                        <TabsContent value="signup">
+                          <div className="mb-6">
+                            <h2 className="text-2xl font-bold text-gray-800">
+                              Create an account
+                            </h2>
+                            <p className="text-gray-400 text-sm mt-1">
+                              Fill out your details to get started
+                            </p>
+                          </div>
+                          <SignUp />
+                        </TabsContent>
+                      </Tabs>
                     </div>
                   </div>
                 </div>
